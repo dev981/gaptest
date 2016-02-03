@@ -71,7 +71,7 @@ class custom_apiController {
                       $Image=isset($LoadNode->field_thumbnail->entity->uri->value)?file_create_url($LoadNode->field_thumbnail->entity->uri->value):'';  
                       if($Image=='')
                       {
-                          $Image=$base_url.'/themes/custom/gapminder/images/Flag_-_Unknown.png';
+                          $Image=$base_url.'/themes/custom/barti/images/Flag_-_Unknown.png';
                       }
                       $link = $base_url.'/node/'.$key;                                    
                       $array[]=array('title'=>$Title,'href'=>$link,'image_url'=>$Image,'subtitle'=>$SubTitle);
@@ -179,6 +179,7 @@ var customSearchControl = new google.search.CustomSearchControl(id, options);
      */
     public function translate() 
       {  
+	    $NodeHtml='';
         global $base_url;
         $langcode=\Drupal::languageManager()->getCurrentLanguage()->getId();
         $result = db_select('menu_link_content_data', 'menu')
@@ -211,6 +212,7 @@ var customSearchControl = new google.search.CustomSearchControl(id, options);
      */
     public function translatetaxonomy() 
         {  
+		  $NodeHtml='';
           global $base_url;
           $langcode=\Drupal::languageManager()->getCurrentLanguage()->getId();         
             $query = db_select('taxonomy_term_field_data', 'taxo');
@@ -247,6 +249,7 @@ var customSearchControl = new google.search.CustomSearchControl(id, options);
      */    
     public function translateblock() 
         {  
+		  $NodeHtml='';
           global $base_url;
           $langcode=\Drupal::languageManager()->getCurrentLanguage()->getId();
           $result = db_select('block_content__body', 'block')

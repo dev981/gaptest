@@ -2,11 +2,12 @@
 
 /**
  * @file
- * Definition of Drupal\image\Tests\ImageFieldDefaultImagesTest.
+ * Contains \Drupal\image\Tests\ImageFieldDefaultImagesTest.
  */
 
 namespace Drupal\image\Tests;
 use Drupal\Component\Utility\Unicode;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\file\Entity\File;
 
 /**
@@ -69,7 +70,7 @@ class ImageFieldDefaultImagesTest extends ImageFieldTestBase {
     // The field default image id should be 2.
     $this->assertEqual($field->getSetting('default_image')['uuid'], $default_images['field']->uuid());
 
-    // Also test \Drupal\field\Entity\FieldConfig::getSetting().
+    // Also test \Drupal\field\Entity\FieldConfig::getSettings().
     $this->assertEqual($field->getSettings()['default_image']['uuid'], $default_images['field']->uuid());
 
     $field_storage = $field->getFieldStorageDefinition();
@@ -85,7 +86,7 @@ class ImageFieldDefaultImagesTest extends ImageFieldTestBase {
       'field_storage' => $field_storage,
       'bundle' => 'page',
       'label' => $field->label(),
-      'required' => $field->required,
+      'required' => $field->isRequired(),
       'settings' => array(
         'default_image' => array(
           'uuid' => $default_images['field2']->uuid(),
@@ -98,7 +99,7 @@ class ImageFieldDefaultImagesTest extends ImageFieldTestBase {
     ));
     $field2->save();
 
-    $widget_settings = entity_get_form_display('node', $field->bundle, 'default')->getComponent($field_name);
+    $widget_settings = entity_get_form_display('node', $field->getTargetBundle(), 'default')->getComponent($field_name);
     entity_get_form_display('node', 'page', 'default')
       ->setComponent($field_name, $widget_settings)
       ->save();
@@ -162,6 +163,13 @@ class ImageFieldDefaultImagesTest extends ImageFieldTestBase {
       )
     );
 
+    // Also check that the field renders without warnings when the label is
+    // hidden.
+    EntityViewDisplay::load('node.article.default')
+      ->setComponent($field_name, array('label' => 'hidden', 'type' => 'image'))
+      ->save();
+    $this->drupalGet('node/' . $article->id());
+
     // Confirm that the image default is shown for a new page node.
     $page = $this->drupalCreateNode(array('type' => 'page'));
     $page_built = $this->drupalBuildEntityView($page);
@@ -213,7 +221,9 @@ class ImageFieldDefaultImagesTest extends ImageFieldTestBase {
     );
 
     // Upload a new default for the article's field field.
-    $field->settings['default_image']['uuid'] = $default_images['field_new']->uuid();
+    $default_image_settings = $field->getSetting('default_image');
+    $default_image_settings['uuid'] = $default_images['field_new']->uuid();
+    $field->setSetting('default_image', $default_image_settings);
     $field->save();
 
     // Confirm the new field field default is used on the article field
@@ -258,7 +268,9 @@ class ImageFieldDefaultImagesTest extends ImageFieldTestBase {
     $this->assertRaw($file->getFilename());
 
     // Remove the instance default from articles.
-    $field->settings['default_image']['uuid'] = 0;
+    $default_image_settings = $field->getSetting('default_image');
+    $default_image_settings['uuid'] = 0;
+    $field->setSetting('default_image', $default_image_settings);
     $field->save();
 
     // Confirm the article field field default has been removed.
@@ -294,7 +306,8 @@ class ImageFieldDefaultImagesTest extends ImageFieldTestBase {
 
     $non_image = $this->drupalGetTestFiles('text');
     $this->drupalPostForm(NULL, array('files[settings_default_image_uuid]' => drupal_realpath($non_image[0]->uri)), t("Upload"));
-    $this->assertText(t('The specified file text-0.txt could not be uploaded. Only files with the following extensions are allowed: png gif jpg jpeg.'), 'Non-image file cannot be used as default image.');
+    $this->assertText('The specified file text-0.txt could not be uploaded.');
+    $this->assertText('Only files with the following extensions are allowed: png gif jpg jpeg.');
 
     // Confirm the default image is shown on the node form.
     $file = File::load($default_images['field_new']->id());
@@ -321,7 +334,7 @@ class ImageFieldDefaultImagesTest extends ImageFieldTestBase {
     // The non-existent default image should not be saved.
     $this->assertNull($settings['default_image']['uuid']);
 
-    $field = entity_create('field_config',  array(
+    $field = entity_create('field_config', array(
       'field_storage' => $field_storage,
       'bundle' => 'page',
       'label' => $this->randomMachineName(),

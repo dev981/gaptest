@@ -5,15 +5,11 @@
  * Contains \Drupal\migrate\Plugin\migrate\process\Migration.
  */
 
-
 namespace Drupal\migrate\Plugin\migrate\process;
 
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\migrate\MigrateException;
 use Drupal\migrate\MigrateSkipProcessException;
-use Drupal\migrate\MigrateSkipRowException;
-use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\MigratePluginManager;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\Entity\MigrationInterface;
@@ -31,11 +27,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class Migration extends ProcessPluginBase implements ContainerFactoryPluginInterface {
 
   /**
+   * The process plugin manager.
+   *
    * @var \Drupal\migrate\Plugin\MigratePluginManager
    */
   protected $processPluginManager;
 
   /**
+   * The entity storage manager.
+   *
    * @var \Drupal\Core\Entity\EntityStorageInterface
    */
   protected $migrationStorage;
@@ -117,7 +117,8 @@ class Migration extends ProcessPluginBase implements ContainerFactoryPluginInter
       $destination_plugin = $migration->getDestinationPlugin(TRUE);
       // Only keep the process necessary to produce the destination ID.
       $process = $migration->get('process');
-      // We already have the source id values but need to key them for the Row
+
+      // We already have the source ID values but need to key them for the Row
       // constructor.
       $source_ids = $migration->getSourcePlugin()->getIds();
       $values = array();
@@ -133,7 +134,8 @@ class Migration extends ProcessPluginBase implements ContainerFactoryPluginInter
       try {
         $destination_ids = $destination_plugin->import($stub_row);
       }
-      catch (MigrateException $e) {
+      catch (\Exception $e) {
+        $migrate_executable->saveMessage($e->getMessage());
       }
     }
     if ($destination_ids) {
@@ -146,11 +148,10 @@ class Migration extends ProcessPluginBase implements ContainerFactoryPluginInter
         return $destination_ids;
       }
     }
-    throw new MigrateSkipRowException();
   }
 
   /**
-   * Skip the migration process entirely if the value is FALSE.
+   * Skips the migration process entirely if the value is FALSE.
    *
    * @param mixed $value
    *   The incoming value to transform.

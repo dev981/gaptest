@@ -254,7 +254,7 @@ function printFilesInFolder($service, $folderId,$apiClient) {
                                $string = str_replace(' ', '-', $nodeestitle); // Replaces all spaces with hyphens
                             $alias = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
                             $alias = strtolower($alias);
-                         \Drupal::service('path.alias_storage')->save("node/" . $node_getid, $nodetype."/".$alias, $languageid);
+                         \Drupal::service('path.alias_storage')->save("/node/" . $node_getid, $nodetype."/".$alias, $languageid);
                         }
                         else
                         {
@@ -274,7 +274,7 @@ function printFilesInFolder($service, $folderId,$apiClient) {
                         $string = str_replace(' ', '-', $nodeestitle); // Replaces all spaces with hyphens
                             $alias = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
                             $alias = strtolower($alias);
-                        \Drupal::service('path.alias_storage')->save("node/" . $node_getid, $nodetype."/".$alias, $languageid);
+                        \Drupal::service('path.alias_storage')->save("/node/" . $node_getid, $nodetype."/".$alias, $languageid);
                         }
                         }
                         else
@@ -421,7 +421,7 @@ function printFilesInFolder($service, $folderId,$apiClient) {
                         $string = str_replace(' ', '-', $nodeestitle); // Replaces all spaces with hyphens
                             $alias = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
                             $alias = strtolower($alias);
-                        \Drupal::service('path.alias_storage')->save("node/" . $node_getid, $nodetype."/".$alias, $languageid);
+                        \Drupal::service('path.alias_storage')->save("/node/" . $node_getid, $nodetype."/".$alias, $languageid);
                         }
                         else
                         {
@@ -441,7 +441,7 @@ function printFilesInFolder($service, $folderId,$apiClient) {
                         $string = str_replace(' ', '-', $nodeestitle); // Replaces all spaces with hyphens
                             $alias = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
                             $alias = strtolower($alias);
-                        \Drupal::service('path.alias_storage')->save("node/" . $node_getid, $nodetype."/".$alias, $languageid);
+                        \Drupal::service('path.alias_storage')->save("/node/" . $node_getid, $nodetype."/".$alias, $languageid);
                         }
                       
                         }

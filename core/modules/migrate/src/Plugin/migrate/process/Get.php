@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\migrate\Plugin\migrate\process\CopyFromSource.
+ * Contains \Drupal\migrate\Plugin\migrate\process\Get.
  */
 
 namespace Drupal\migrate\Plugin\migrate\process;
@@ -21,6 +21,8 @@ use Drupal\migrate\Row;
 class Get extends ProcessPluginBase {
 
   /**
+   * Flag indicating whether there are multiple values.
+   *
    * @var bool
    */
   protected $multiple;
@@ -69,4 +71,5 @@ class Get extends ProcessPluginBase {
   public function multiple() {
     return $this->multiple;
   }
+
 }

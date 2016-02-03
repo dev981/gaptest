@@ -50,9 +50,7 @@ class ProfileForm extends AccountForm {
     $account = $this->entity;
     $account->save();
     $form_state->setValue('uid', $account->id());
-    $form_state->setRedirect('user.page',
-            array('user' => $account->id())
-            ); // to redirect on user profile page after edit the profile and saved.
+
     drupal_set_message($this->t('The changes have been saved.'));
   }
 

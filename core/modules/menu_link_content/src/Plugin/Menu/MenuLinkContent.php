@@ -8,7 +8,6 @@
 namespace Drupal\menu_link_content\Plugin\Menu;
 
 use Drupal\Component\Plugin\Exception\PluginException;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Menu\MenuLinkBase;
@@ -138,7 +137,7 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
         $entity = reset($loaded_entities);
       }
       if (!$entity) {
-        throw new PluginException(SafeMarkup::format('Entity not found through the menu link plugin definition and could not fallback on UUID @uuid', array('@uuid' => $uuid)));
+        throw new PluginException("Entity not found through the menu link plugin definition and could not fallback on UUID '$uuid'");
       }
       // Clone the entity object to avoid tampering with the static cache.
       $this->entity = clone $entity;
@@ -175,8 +174,8 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
     }
     return $this->pluginDefinition['description'];
   }
-  
-  /**
+
+    /**
    * {@inheritdoc}
    */
   public function getIcon() {
@@ -184,12 +183,10 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
       return $this->getEntity()->getIcon();
     }
     return $this->pluginDefinition['icon'];
-  }    
+  }  
   /**
    * {@inheritdoc}
    */
-  
-  
   public function getDeleteRoute() {
     return $this->getEntity()->urlInfo('delete-form');
   }

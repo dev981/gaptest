@@ -31,7 +31,7 @@ interface LinkGeneratorInterface {
    * However, for links enclosed in translatable text you should use t() and
    * embed the HTML anchor tag directly in the translated string. For example:
    * @code
-   * $text = t('Visit the <a href="@url">content types</a> page', array('@url' => \Drupal::url('entity.node_type.collection')));
+   * $text = t('Visit the <a href=":url">content types</a> page', array(':url' => \Drupal::url('entity.node_type.collection')));
    * @endcode
    * This keeps the context of the link title ('settings' in the example) for
    * translators.
@@ -61,8 +61,9 @@ interface LinkGeneratorInterface {
    *     sparingly since it is usually unnecessary and requires extra
    *     processing.
    *
-   * @return string
-   *   An HTML string containing a link to the given route and parameters.
+   * @return \Drupal\Core\GeneratedLink
+   *   A GeneratedLink object containing a link to the given route and
+   *   parameters and bubbleable metadata.
    *
    * @throws \Symfony\Component\Routing\Exception\RouteNotFoundException
    *   Thrown when the named route doesn't exist.
@@ -71,6 +72,9 @@ interface LinkGeneratorInterface {
    * @throws \Symfony\Component\Routing\Exception\InvalidParameterException
    *   Thrown when a parameter value for a placeholder is not correct because it
    *   does not match the requirement.
+   *
+   * @internal
+   *   Should not be used in user code. Use \Drupal\Core\Link instead.
    */
   public function generate($text, Url $url);
 
@@ -80,8 +84,13 @@ interface LinkGeneratorInterface {
    * @param \Drupal\Core\Link $link
    *   A link object to convert to a string.
    *
-   * @return string
-   *   An HTML string containing a link to the given link.
+   * @return \Drupal\Core\GeneratedLink
+   *   A GeneratedLink object containing a link to the given route and
+   *   parameters and bubbleable metadata.
+   *
+   * @internal
+   *   Should not be used in user code.
+   *   Use \Drupal\Core\Link instead.
    */
   public function generateFromLink(Link $link);
 

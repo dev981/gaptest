@@ -2,13 +2,15 @@
 
 /**
  * @file
- * Definition of Drupal\node\Tests\NodeTypeTest.
+ * Contains \Drupal\node\Tests\NodeTypeTest.
  */
 
 namespace Drupal\node\Tests;
 
 use Drupal\field\Entity\FieldConfig;
 use Drupal\node\Entity\NodeType;
+use Drupal\Core\Url;
+use Drupal\node\NodeTypeInterface;
 
 /**
  * Ensures that node type functions work correctly.
@@ -22,7 +24,7 @@ class NodeTypeTest extends NodeTestBase {
    *
    * @var array
    */
-  public static $modules = array('field_ui');
+  public static $modules = ['field_ui'];
 
   /**
    * Ensures that node type functions (node_type_get_*) work correctly.
@@ -63,6 +65,13 @@ class NodeTypeTest extends NodeTestBase {
     // Create a content type via the user interface.
     $web_user = $this->drupalCreateUser(array('bypass node access', 'administer content types'));
     $this->drupalLogin($web_user);
+
+    $this->drupalGet('node/add');
+    $this->assertCacheTag('config:node_type_list');
+    $this->assertCacheContext('user.permissions');
+    $elements = $this->cssSelect('dl.node-type-list dt');
+    $this->assertEqual(3, count($elements));
+
     $edit = array(
       'name' => 'foo',
       'title_label' => 'title for foo',
@@ -71,6 +80,10 @@ class NodeTypeTest extends NodeTestBase {
     $this->drupalPostForm('admin/structure/types/add', $edit, t('Save and manage fields'));
     $type_exists = (bool) NodeType::load('foo');
     $this->assertTrue($type_exists, 'The new content type has been created in the database.');
+
+    $this->drupalGet('node/add');
+    $elements = $this->cssSelect('dl.node-type-list dt');
+    $this->assertEqual(4, count($elements));
   }
 
   /**
@@ -98,10 +111,9 @@ class NodeTypeTest extends NodeTestBase {
     $this->assertRaw('Foo', 'New title label was displayed.');
     $this->assertNoRaw('Title', 'Old title label was not displayed.');
 
-    // Change the name, machine name and description.
+    // Change the name and the description.
     $edit = array(
       'name' => 'Bar',
-      'type' => 'bar',
       'description' => 'Lorem ipsum.',
     );
     $this->drupalPostForm('admin/structure/types/manage/page', $edit, t('Save content type'));
@@ -110,16 +122,26 @@ class NodeTypeTest extends NodeTestBase {
     $this->assertRaw('Bar', 'New name was displayed.');
     $this->assertRaw('Lorem ipsum', 'New description was displayed.');
     $this->clickLink('Bar');
-    $this->assertUrl(\Drupal::url('node.add', ['node_type' => 'bar'], ['absolute' => TRUE]), [], 'New machine name was used in URL.');
     $this->assertRaw('Foo', 'Title field was found.');
     $this->assertRaw('Body', 'Body field was found.');
 
+    // Change the name through the API
+    /** @var NodeTypeInterface $node_type */
+    $node_type = NodeType::load('page');
+    $node_type->set('name', 'NewBar');
+    $node_type->save();
+
+    /** @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface $bundle_info */
+    $bundle_info = \Drupal::service('entity_type.bundle.info');
+    $node_bundles = $bundle_info->getBundleInfo('node');
+    $this->assertEqual($node_bundles['page']['label'], 'NewBar', 'Node type bundle cache is updated');
+
     // Remove the body field.
-    $this->drupalPostForm('admin/structure/types/manage/bar/fields/node.bar.body/delete', array(), t('Delete'));
+    $this->drupalPostForm('admin/structure/types/manage/page/fields/node.page.body/delete', array(), t('Delete'));
     // Resave the settings for this type.
-    $this->drupalPostForm('admin/structure/types/manage/bar', array(), t('Save content type'));
+    $this->drupalPostForm('admin/structure/types/manage/page', array(), t('Save content type'));
     // Check that the body field doesn't exist.
-    $this->drupalGet('node/add/bar');
+    $this->drupalGet('node/add/page');
     $this->assertNoRaw('Body', 'Body field was not found.');
   }
 
@@ -202,6 +224,31 @@ class NodeTypeTest extends NodeTestBase {
     $this->drupalGet('admin/structure/types');
     $this->assertNoLinkByHref('admin/structure/types/manage/article/fields');
     $this->assertLinkByHref('admin/structure/types/manage/article/display');
+  }
+
+  /**
+   * Tests for when there are no content types defined.
+   */
+  public function testNodeTypeNoContentType() {
+    /** @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface $bundle_info */
+    $bundle_info = \Drupal::service('entity_type.bundle.info');
+    $this->assertEqual(2, count($bundle_info->getBundleInfo('node')), 'The bundle information service has 2 bundles for the Node entity type.');
+    $web_user = $this->drupalCreateUser(['administer content types']);
+    $this->drupalLogin($web_user);
+
+    // Delete 'article' bundle.
+    $this->drupalPostForm('admin/structure/types/manage/article/delete', [], t('Delete'));
+    // Delete 'page' bundle.
+    $this->drupalPostForm('admin/structure/types/manage/page/delete', [], t('Delete'));
+
+    // Navigate to content type administration screen
+    $this->drupalGet('admin/structure/types');
+    $this->assertRaw(t('No content types available. <a href=":link">Add content type</a>.', [
+        ':link' => Url::fromRoute('node.type_add')->toString()
+      ]), 'Empty text when there are no content types in the system is correct.');
+
+    $bundle_info->clearCachedBundles();
+    $this->assertEqual(0, count($bundle_info->getBundleInfo('node')), 'The bundle information service has 0 bundles for the Node entity type.');
   }
 
 }

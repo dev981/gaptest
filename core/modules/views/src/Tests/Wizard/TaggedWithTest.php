@@ -2,13 +2,13 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\Wizard\TaggedWithTest.
+ * Contains \Drupal\views\Tests\Wizard\TaggedWithTest.
  */
 
 namespace Drupal\views\Tests\Wizard;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\entity_reference\Tests\EntityReferenceTestTrait;
+use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 
 /**
  * Tests the ability of the views wizard to create views filtered by taxonomy.
@@ -77,7 +77,7 @@ class TaggedWithTest extends WizardTestBase {
     $this->nodeTypeWithoutTags = $this->drupalCreateContentType();
 
     // Create the vocabulary for the tag field.
-    $this->tagVocabulary = entity_create('taxonomy_vocabulary',  array(
+    $this->tagVocabulary = entity_create('taxonomy_vocabulary', array(
       'name' => 'Views testing tags',
       'vid' => 'views_testing_tags',
     ));
@@ -196,7 +196,7 @@ class TaggedWithTest extends WizardTestBase {
     $this->drupalPostForm('admin/structure/views/add', $view, t('Update "of type" choice'));
     $this->assertFieldByXpath($tags_xpath);
     $view['show[type]'] = $this->nodeTypeWithoutTags->id();
-    $this->drupalPostForm(NULL, $view, t('Update "of type" choice'));
+    $this->drupalPostForm(NULL, $view, t('Update "of type" choice (2)'));
     $this->assertNoFieldByXpath($tags_xpath);
 
     // If we add an instance of the tagging field to the second node type, the
@@ -225,7 +225,7 @@ class TaggedWithTest extends WizardTestBase {
     $this->drupalPostForm('admin/structure/views/add', $view, t('Update "of type" choice'));
     $this->assertFieldByXpath($tags_xpath);
     $view['show[type]'] = $this->nodeTypeWithoutTags->id();
-    $this->drupalPostForm(NULL, $view, t('Update "of type" choice'));
+    $this->drupalPostForm(NULL, $view, t('Update "of type" choice (2)'));
     $this->assertFieldByXpath($tags_xpath);
   }
 

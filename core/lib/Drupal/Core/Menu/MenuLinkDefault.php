@@ -67,37 +67,23 @@ class MenuLinkDefault extends MenuLinkBase implements ContainerFactoryPluginInte
    * {@inheritdoc}
    */
   public function getTitle() {
-    // Subclasses may pull in the request or specific attributes as parameters.
-    $options = array();
-    if (!empty($this->pluginDefinition['title_context'])) {
-      $options['context'] = $this->pluginDefinition['title_context'];
-    }
-    $args = array();
-    if (isset($this->pluginDefinition['title_arguments']) && $title_arguments = $this->pluginDefinition['title_arguments']) {
-      $args = (array) $title_arguments;
-    }
-    return $this->t($this->pluginDefinition['title'], $args, $options);
+    return (string) $this->pluginDefinition['title'];
   }
 
   /**
    * {@inheritdoc}
    */
   public function getDescription() {
-    if ($this->pluginDefinition['description']) {
-      return $this->t($this->pluginDefinition['description']);
-    }
-    return '';
+    return (string) $this->pluginDefinition['description'];
   }
   
   /**
    * {@inheritdoc}
    */
   public function getIcon() {
-    if (isset($this->pluginDefinition['icon']) && ($this->pluginDefinition['icon'])) {
-      return $this->t($this->pluginDefinition['icon']);
-    }
-    return '';
+    return (string) $this->pluginDefinition['icon'];
   }  
+  
   /**
    * {@inheritdoc}
    */
@@ -117,7 +103,7 @@ class MenuLinkDefault extends MenuLinkBase implements ContainerFactoryPluginInte
     if ($persist) {
       // Always save the menu name as an override to avoid defaulting to tools.
       $overrides['menu_name'] = $this->pluginDefinition['menu_name'];
-      $this->staticOverride->saveOverride($this->getPluginId(), $overrides);
+      $this->staticOverride->saveOverride($this->getPluginId(), $this->pluginDefinition);
     }
     return $this->pluginDefinition;
   }

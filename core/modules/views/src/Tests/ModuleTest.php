@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\views\Tests\ModuleTest.
+ * Contains \Drupal\views\Tests\ModuleTest.
  */
 
 namespace Drupal\views\Tests;
@@ -15,15 +15,16 @@ namespace Drupal\views\Tests;
 use Drupal\views\Plugin\views\filter\Standard;
 use Drupal\views\Views;
 use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 
-class ModuleTest extends ViewUnitTestBase {
+class ModuleTest extends ViewKernelTestBase {
 
   /**
    * Views used by this test.
    *
    * @var array
    */
-  public static $testViews = array('test_view_status', 'test_view');
+  public static $testViews = array('test_view_status', 'test_view', 'test_argument');
 
   /**
    * Modules to enable.
@@ -54,7 +55,7 @@ class ModuleTest extends ViewUnitTestBase {
         'field' => $this->randomMachineName(),
       );
       $handler = $this->container->get('plugin.manager.views.' . $type)->getHandler($item);
-      $this->assertEqual('Drupal\views\Plugin\views\\' . $type . '\Broken', get_class($handler), t('Make sure that a broken handler of type: @type are created', array('@type' => $type)));
+      $this->assertEqual('Drupal\views\Plugin\views\\' . $type . '\Broken', get_class($handler), new FormattableMarkup('Make sure that a broken handler of type: @type is created.', ['@type' => $type]));
     }
 
     $views_data = $this->viewsData();
@@ -178,14 +179,14 @@ class ModuleTest extends ViewUnitTestBase {
     foreach ($all_views as $id => $view) {
       $expected_options[$id] = $view->label();
     }
-    $this->assertIdentical($expected_options, Views::getViewsAsOptions(TRUE), 'Expected options array was returned.');
+    $this->assertIdentical($expected_options, $this->castSafeStrings(Views::getViewsAsOptions(TRUE)), 'Expected options array was returned.');
 
     // Test the default.
-    $this->assertIdentical($this->formatViewOptions($all_views), Views::getViewsAsOptions(), 'Expected options array for all views was returned.');
+    $this->assertIdentical($this->formatViewOptions($all_views), $this->castSafeStrings(Views::getViewsAsOptions()), 'Expected options array for all views was returned.');
     // Test enabled views.
-    $this->assertIdentical($this->formatViewOptions($expected_enabled), Views::getViewsAsOptions(FALSE, 'enabled'), 'Expected enabled options array was returned.');
+    $this->assertIdentical($this->formatViewOptions($expected_enabled), $this->castSafeStrings(Views::getViewsAsOptions(FALSE, 'enabled')), 'Expected enabled options array was returned.');
     // Test disabled views.
-    $this->assertIdentical($this->formatViewOptions($expected_disabled), Views::getViewsAsOptions(FALSE, 'disabled'), 'Expected disabled options array was returned.');
+    $this->assertIdentical($this->formatViewOptions($expected_disabled), $this->castSafeStrings(Views::getViewsAsOptions(FALSE, 'disabled')), 'Expected disabled options array was returned.');
 
     // Test the sort parameter.
     $all_views_sorted = $all_views;
@@ -201,10 +202,10 @@ class ModuleTest extends ViewUnitTestBase {
     $expected_opt_groups = array();
     foreach ($all_views as $view) {
       foreach ($view->get('display') as $display) {
-          $expected_opt_groups[$view->id()][$view->id() . ':' . $display['id']] = t('@view : @display', array('@view' => $view->id(), '@display' => $display['id']));
+          $expected_opt_groups[$view->id()][$view->id() . ':' . $display['id']] = (string) t('@view : @display', array('@view' => $view->id(), '@display' => $display['id']));
       }
     }
-    $this->assertIdentical($expected_opt_groups, Views::getViewsAsOptions(FALSE, 'all', NULL, TRUE), 'Expected option array for an option group returned.');
+    $this->assertIdentical($expected_opt_groups, $this->castSafeStrings(Views::getViewsAsOptions(FALSE, 'all', NULL, TRUE)), 'Expected option array for an option group returned.');
   }
 
   /**
@@ -269,6 +270,71 @@ class ModuleTest extends ViewUnitTestBase {
   }
 
   /**
+   * Tests views.module: views_embed_view().
+   */
+  public function testViewsEmbedView() {
+    $this->enableModules(array('user'));
+
+    $result = views_embed_view('test_argument');
+    $this->assertEqual(count($result['#view']->result), 5);
+
+    $result = views_embed_view('test_argument', 'default', 1);
+    $this->assertEqual(count($result['#view']->result), 1);
+
+    $result = views_embed_view('test_argument', 'default', '1,2');
+    $this->assertEqual(count($result['#view']->result), 2);
+
+    $result = views_embed_view('test_argument', 'default', '1,2', 'John');
+    $this->assertEqual(count($result['#view']->result), 1);
+
+    $result = views_embed_view('test_argument', 'default', '1,2', 'John,George');
+    $this->assertEqual(count($result['#view']->result), 2);
+  }
+
+  /**
+   * Tests the \Drupal\views\ViewsExecutable::preview() method.
+   */
+  public function testViewsPreview() {
+    $this->enableModules(array('user'));
+
+    $view = Views::getView('test_argument');
+    $result = $view->preview('default');
+    $this->assertEqual(count($result['#view']->result), 5);
+
+    $view = Views::getView('test_argument');
+    $result = $view->preview('default', array('0' => 1));
+    $this->assertEqual(count($result['#view']->result), 1);
+
+    $view = Views::getView('test_argument');
+    $result = $view->preview('default', array('3' => 1));
+    $this->assertEqual(count($result['#view']->result), 1);
+
+    $view = Views::getView('test_argument');
+    $result = $view->preview('default', array('0' => '1,2'));
+    $this->assertEqual(count($result['#view']->result), 2);
+
+    $view = Views::getView('test_argument');
+    $result = $view->preview('default', array('3' => '1,2'));
+    $this->assertEqual(count($result['#view']->result), 2);
+
+    $view = Views::getView('test_argument');
+    $result = $view->preview('default', array('0' => '1,2', '1' => 'John'));
+    $this->assertEqual(count($result['#view']->result), 1);
+
+    $view = Views::getView('test_argument');
+    $result = $view->preview('default', array('3' => '1,2', '4' => 'John'));
+    $this->assertEqual(count($result['#view']->result), 1);
+
+    $view = Views::getView('test_argument');
+    $result = $view->preview('default', array('0' => '1,2', '1' => 'John,George'));
+    $this->assertEqual(count($result['#view']->result), 2);
+
+    $view = Views::getView('test_argument');
+    $result = $view->preview('default', array('3' => '1,2', '4' => 'John,George'));
+    $this->assertEqual(count($result['#view']->result), 2);
+  }
+
+  /**
    * Helper to return an expected views option array.
    *
    * @param array $views
@@ -282,7 +348,7 @@ class ModuleTest extends ViewUnitTestBase {
     $expected_options = array();
     foreach ($views as $view) {
       foreach ($view->get('display') as $display) {
-        $expected_options[$view->id() . ':' . $display['id']] = t('View: @view - Display: @display',
+        $expected_options[$view->id() . ':' . $display['id']] = (string) t('View: @view - Display: @display',
           array('@view' => $view->id(), '@display' => $display['id']));
       }
     }

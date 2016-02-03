@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\language\Tests\LanguageUILanguageNegotiationTest.
+ * Contains \Drupal\language\Tests\LanguageUILanguageNegotiationTest.
  */
 
 namespace Drupal\language\Tests;
@@ -221,8 +221,13 @@ class LanguageUILanguageNegotiationTest extends WebTestBase {
 
     // Unknown language prefix should return 404.
     $definitions = \Drupal::languageManager()->getNegotiator()->getNegotiationMethods();
+    // Enable only methods, which are either not limited to a specific language
+    // type or are supporting the interface language type.
+    $language_interface_method_definitions = array_filter($definitions, function ($method_definition) {
+      return !isset($method_definition['types']) || (isset($method_definition['types']) && in_array(LanguageInterface::TYPE_INTERFACE, $method_definition['types']));
+    });
     $this->config('language.types')
-      ->set('negotiation.' . LanguageInterface::TYPE_INTERFACE . '.enabled', array_flip(array_keys($definitions)))
+      ->set('negotiation.' . LanguageInterface::TYPE_INTERFACE . '.enabled', array_flip(array_keys($language_interface_method_definitions)))
       ->save();
     $this->drupalGet("$langcode_unknown/admin/config", array(), $http_header_browser_fallback);
     $this->assertResponse(404, "Unknown language path prefix should return 404");
@@ -267,7 +272,7 @@ class LanguageUILanguageNegotiationTest extends WebTestBase {
       'expect' => $language_string,
       'expected_method_id' => LanguageNegotiationUser::METHOD_ID,
       'http_header' => array(),
-      'message' => 'USER > DEFAULT: defined prefereed user language setting, the UI language is based on user setting',
+      'message' => 'USER > DEFAULT: defined preferred user language setting, the UI language is based on user setting',
     );
     $this->runTest($test);
 
@@ -309,7 +314,7 @@ class LanguageUILanguageNegotiationTest extends WebTestBase {
       'expect' => $language_string,
       'expected_method_id' => LanguageNegotiationUserAdmin::METHOD_ID,
       'http_header' => array(),
-      'message' => 'USER ADMIN > DEFAULT: defined prefereed user admin language setting, the UI language is based on user setting',
+      'message' => 'USER ADMIN > DEFAULT: defined preferred user admin language setting, the UI language is based on user setting',
     );
     $this->runTest($test);
 
@@ -393,6 +398,9 @@ class LanguageUILanguageNegotiationTest extends WebTestBase {
     // it is set by JavaScript.
     $this->drupalLogout();
 
+    // Place a site branding block in the header region.
+    $this->drupalPlaceBlock('system_branding_block', ['region' => 'header']);
+
     // Access the front page without specifying any valid URL language prefix
     // and having as browser language preference a non-default language.
     $http_header = array("Accept-Language: $langcode_browser_fallback;q=1");
@@ -406,7 +414,7 @@ class LanguageUILanguageNegotiationTest extends WebTestBase {
     $this->assertTrue($fields[0] == $languages[$langcode_browser_fallback]->getName(), 'The browser language is the URL active language');
 
     // Check that URLs are rewritten using the given browser language.
-    $fields = $this->xpath('//strong[@class="site-name"]/a[@rel="home" and @href=:url]', $args);
+    $fields = $this->xpath('//div[@class="site-name"]/a[@rel="home" and @href=:url]', $args);
     $this->assertTrue($fields[0] == 'Drupal', 'URLs are rewritten using the browser language.');
   }
 
@@ -449,6 +457,15 @@ class LanguageUILanguageNegotiationTest extends WebTestBase {
     $this->drupalPostForm('admin/config/regional/language/detection/url', $edit, t('Save configuration'));
     $this->assertText('The configuration options have been saved', 'Domain configuration is saved.');
     $this->rebuildContainer();
+
+    // Try to use an invalid domain.
+    $edit = [
+      'language_negotiation_url_part' => LanguageNegotiationUrl::CONFIG_DOMAIN,
+      'domain[en]' => $base_url_host,
+      'domain[it]' => 'it.example.com/',
+    ];
+    $this->drupalPostForm('admin/config/regional/language/detection/url', $edit, t('Save configuration'));
+    $this->assertRaw(t('The domain for %language may only contain the domain name, not a trailing slash, protocol and/or port.', ['%language' => 'Italian']));
 
     // Build the link we're going to test.
     $link = 'it.example.com' . rtrim(base_path(), '/') . '/admin';

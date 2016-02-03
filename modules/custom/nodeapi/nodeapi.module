@@ -1,4 +1,6 @@
 <?php
+use Drupal\Core\Routing;
+
  module_load_include('php','nodeapi','googleclient/src/Google/Client');
  module_load_include('php','nodeapi','googleclient/src/Google/Service/Oauth2');
  
@@ -21,7 +23,7 @@ function nodeapi_menu()
 
 function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id)
 
-{
+{//print_r($form_id); die();
       $form['#attached']['library'][] = 'nodeapi/drive';
 
     if($form_id=='node_answers_slideshows_edit_form')
@@ -48,7 +50,11 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
        $node = \Drupal::routeMatch()->getParameter('node');
        $_SESSION['url']= $_SERVER['REQUEST_URI'];
    
-       $langid=$node->prepareLangcode();
+       $currenturl = $_SERVER['REQUEST_URI'];
+        $url = explode('/node',$currenturl);
+        $currenturl = $url[0];
+        $langid = end(explode('/',$currenturl));
+      // $langid=$node->prepareLangcode();
        
         $node_es = $node->getTranslation($langid);
         $node_id=$node->id();
@@ -110,9 +116,9 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
        
        $form['drive_link']=array(
           
-          '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>'
-            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
-           . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+          '#markup'=>t('<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>
+            <input class="baseurlpath" type="hidden" value="'.$base_url.'"/>
+           <a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>'),
            '#weight'=>6
        );
        
@@ -212,11 +218,9 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
        
              $form['drive_link']=array(
           
-             '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'.$node_id .'"/>'
-            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
-            
-            
-            . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+             '#markup'=>t('<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'.$node_id .'"/>
+            <input class="baseurlpath" type="hidden" value="'.$base_url.'"/>
+            <a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>'),
            '#weight'=>6
              );
         }
@@ -308,11 +312,9 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
         
              $form['drive_link']=array(
           
-             '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'.$node_id .'"/>'
-            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
-            
-            
-            . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+             '#markup'=>t('<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'.$node_id .'"/>
+            <input class="baseurlpath" type="hidden" value="'.$base_url.'"/>
+            <a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>'),
            '#weight'=>6
              );
         }
@@ -344,7 +346,12 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
        $node = \Drupal::routeMatch()->getParameter('node');
        $_SESSION['url']= $_SERVER['REQUEST_URI'];
    
-       $langid=$node->prepareLangcode();
+       $currenturl = $_SERVER['REQUEST_URI'];
+        $url = explode('/node',$currenturl);
+        $currenturl = $url[0];
+        $langid = end(explode('/',$currenturl));
+      // $langid=$node->prepareLangcode();
+       //$langid=$node->prepareLangcode();
        
         $node_es = $node->getTranslation($langid);
         $node_id=$node->id();
@@ -406,9 +413,9 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
 		
        $form['drive_link']=array(
            
-          '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>'
-            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
-           . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+          '#markup'=>t('<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>
+            <input class="baseurlpath" type="hidden" value="'.$base_url.'"/>
+           <a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>'),
            '#weight'=>6
        );
        
@@ -497,16 +504,12 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
            
             $lngtext="Translate Slide";
         }
-        
-        
        
              $form['drive_link']=array(
           
-             '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'.$node_id .'"/>'
-            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
-            
-            
-            . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+             '#markup'=> t('<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>
+           <input class="baseurlpath" type="hidden" value="'.$base_url.'"/>
+           <a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>'),
            '#weight'=>6
              );
         }
@@ -537,8 +540,12 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
        $authUrl = getAuthorizationUrl("", "");
        $node = \Drupal::routeMatch()->getParameter('node');
        $_SESSION['url']= $_SERVER['REQUEST_URI'];
-   
-       $langid=$node->prepareLangcode();
+
+        $currenturl = $_SERVER['REQUEST_URI'];
+        $url = explode('/node',$currenturl);
+        $currenturl = $url[0];
+        $langid = end(explode('/',$currenturl));
+      // $langid=$node->prepareLangcode();
        
         $node_es = $node->getTranslation($langid);
         $node_id=$node->id();
@@ -551,7 +558,6 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
         $xpath = new DOMXPath($doc);
         $src = $xpath->evaluate("string(//iframe/@src)");
         $srcexplode=explode("/",$src);
-        
         $_SESSION['fileid']=$srcexplode[5];
 
         $_SESSION['nodeid']=$node_id;
@@ -600,9 +606,9 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
 		
        $form['drive_link']=array(
            
-          '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>'
-            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
-           . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+          '#markup'=>t('<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>
+           <input class="baseurlpath" type="hidden" value="'.$base_url.'"/>
+           <a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>'),
            '#weight'=>6
        );
        
@@ -613,94 +619,134 @@ function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_s
     return $form;
 }
 
-function nodeapi_node_presave($node){
+function nodeapi_node_presave(Drupal\Core\Entity\EntityInterface $node){
      /**
-	  *  node form values
-	  */
-	$type = $node->type->target_id;
-        if($type == 'factpod' || $type == 'answers' || $type == 'answers_slideshows' || $type == 'test_questions' || $type == 'slideshows'){
-                $j=0;
-                $related_values = array();
-		$title = $node->title->value; 
-		$content_translation_outdated = $node->content_translation_outdated->value;
-		$body = $node->body->value;
-		$field_order = $node->field_order->value;
-		$field_subtitle = $node->field_subtitle->value;
-		$field_video_url = $node->field_video_url->value;
-                $pre_total_contributors = count($node->field_contributors);
-                $thumbnail_image = $node->field_thumbnail->entity->fid->value;
-                $related = $node->field_related;
-                $total_related = count($node->field_related); 
-                $nid = $node->nid->value;
-                $languageid=\Drupal::languageManager()->getCurrentLanguage()->getId();
-            
-               // $related = 
-		 /**
-		  *  database save values
-		  */
-		$nodeload = \Drupal::routeMatch()->getParameter('node');
-		 $pre_title = $nodeload->title->value;
-		 $pre_content_translation_outdated = $nodeload->content_translation_outdated->value;
-		 $pre_body = $nodeload->body->value;
-		 $pre_field_subtitle = $nodeload->field_subtitle->value;
-		 $pre_field_order = $nodeload->field_order->value;
-		 $pre_field_subtitle = $nodeload->field_subtitle->value;
-		 $pre_field_video_url = $nodeload->field_video_url->value;
-                 $total_contributors =count($nodeload->field_contributors);
-                 $pre_thumbnail_image = $nodeload->field_thumbnail->entity->fid->value;
-                 $pre_related = $nodeload->field_related;
-                 $pre_total_related = count($nodeload->field_related); 
-                   
-               
-                 for($i=0;$i<$total_contributors;$i++)
-                 {
-                 $pre_field_contribution = $nodeload->field_contributors[$i]->target_id;
-                 }
-		$check = 0;
-		if($title != $pre_title || $content_translation_outdated != $pre_content_translation_outdated){
-		$check = 1;
-		}
-		if($body != $pre_body || $field_order != $pre_field_order){
-		$check = 1;
-		}
-		if($field_subtitle != $pre_field_subtitle || $field_video_url != $pre_field_video_url || $thumbnail_image != $pre_thumbnail_image){
-		$check = 1;
-		}
-                for(;$j<$total_related;$j++)
-                {       
-                $related_val = $node->field_related[$j]->target_id; 
-                $pre_related_val = $nodeload->field_related[$j]->target_id; 
-                if($related_val != $pre_related_val){
-                    $check = 1;
-                 }
-		}
-                if($total_related !=$pre_total_related){
-                $check = 1;
-                }
+        *  node form values
+        */
+     $current_url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+     $url_array = explode('/',$current_url);
+     $translation_del = 0;
+     if(in_array('translations',$url_array) && in_array('delete',$url_array)){
+        $translation_del = 1; 
+     }
+      if($translation_del == 0){ 
+    $type = $node->type->target_id;
+            if($type == 'factpod' || $type == 'answers' || $type == 'answers_slideshows' || $type == 'test_questions' || $type == 'slideshows'){
+                        $j=0;
+                        $related_values = array();
+                        $title = $node->title->value; 
+                        $content_translation_outdated = $node->content_translation_outdated->value;
+                        $body = $node->body->value;
+                        $field_order = $node->field_order->value;
+                        $field_subtitle = $node->field_subtitle->value;
+                        $field_video_url = $node->field_video_url->value;
+                        $pre_total_contributors = count($node->field_contributors);
+                        $thumbnail_image = $node->field_thumbnail->entity->fid->value;
+                        $related = $node->field_related;
+                        $total_related = count($node->field_related); 
+                        $nid = $node->nid->value;
+                        $languageid=\Drupal::languageManager()->getCurrentLanguage()->getId();
+                        /**
+                         *  database save values
+                         */
+                    //     $nodeload = \Drupal::routeMatch()->getParameter('node');
+                         $result = translatednodeload($nid,$languageid);  
+                         $pre_title =$result['title'];
+                         $pre_content_translation_outdated = $result['node']['content_translation_outdated'];
+                         $pre_field_subtitle = $result['node']['field_subtitle_value'];
+                         $pre_body = $result['node']['body_value'];
+                         $pre_field_order = $result['node']['field_order_value'];
+                         $pre_field_video_url = $result['node']['field_video_url_value'];
+                         $pre_thumbnail_image = $result['node']['field_thumbnail_target_id'];
+                         $total_contributors =count($result['contributors']);
+                         $pre_total_related = count($result['related']); 
 
-		$account = \Drupal::currentUser();
-		$uid = $account->id();
-                    
-                if($uid!=1){
-	        $values=array();
-                $i=0;
-           
-                       for(;$i<$pre_total_contributors;$i++)
-                {
-                           $values[$i] = array('target_id' => $node->field_contributors[$i]->target_id);
-		}
- 
-                if($check == 1){
-                 $values[] = array('target_id' =>$uid);
-              }
-               $node->field_contributors = $values;
-                }
-                
- 
-	}
-     
+                         for($i=0;$i<$total_contributors;$i++)
+                         {
+                         $pre_field_contribution = $nodeload->field_contributors[$i]->target_id;
+                         }
+                        $check = 0;
+                        if($title != $pre_title || $content_translation_outdated != $pre_content_translation_outdated){
+                            $check = 1;
+                        }
+                        if($body != $pre_body || $field_order != $pre_field_order){
+                             $check = 1;
+                        }
+                        if($field_subtitle != $pre_field_subtitle || $field_video_url != $pre_field_video_url || $thumbnail_image != $pre_thumbnail_image){
+                             $check = 1;
+                        }
+                        for(;$j<$total_related;$j++)
+                        {       
+                            $related_val = $node->field_related[$j]->target_id; 
+                            $pre_related_val = $nodeload->field_related[$j]->target_id; 
+                            if($related_val != $pre_related_val){
+                                 $check = 1;
+                             }	
+                        }
+                        if($total_related !=$pre_total_related){
+                           $check = 1;
+                        }
+                        $account = \Drupal::currentUser();
+                        $uid = $account->id();
+
+                        if($uid!=1){
+                            $values=array();
+                            $i=0;
+
+                            for(;$i<$pre_total_contributors;$i++)
+                           {
+                                   $values[$i] = array('target_id' => $node->field_contributors[$i]->target_id);
+                           }
+
+                           if($check == 1){
+                             $values[] = array('target_id' =>$uid);
+                          }
+                           $node->field_contributors = $values;
+                        }
+
+                      //\Drupal::service('path.alias_storage')->save("/node/" . $nid, $type."/".$title."-111", $languageid);
+                       }
+
+           }
 }
-     
 
+ function translatednodeload($nid,$languageid) {
+        $result = db_select('node_field_data', 'e');
+        $result->join('node__body', 'b' , 'b.entity_id  = e.nid');
+        $result->join('node__field_subtitle', 's' , 's.entity_id  = e.nid');
+        $result->join('node__field_order', 'o' , 'o.entity_id  = e.nid');
+        $result->join('node__field_video_url', 'v' , 'v.entity_id  = e.nid');
+        $result->join('node__field_thumbnail', 't' , 't.entity_id  = e.nid');
+        $result
+             ->fields('e',array('title', 'created','content_translation_outdated'))
+             ->fields('s',array('field_subtitle_value'))
+             ->fields('o',array('field_order_value'))
+             ->fields('v',array('field_video_url_value'))
+             ->fields('t',array('field_thumbnail_target_id'))
+             ->fields('b',array('body_value'))
 
-    
+             ->condition('e.nid', $nid)
+             ->condition('e.langcode', $languageid,'=')
+             ->condition('b.langcode', $languageid,'=')
+             ->condition('s.langcode', $languageid,'=')
+             ->condition('v.langcode', $languageid,'=')
+             ->condition('t.langcode', $languageid,'=')
+             ->orderBy('e.created', 'DESC')
+                ;
+            $res = $result->execute()->fetchAssoc();
+            
+      $result1 = db_select('node__field_contributors', 'c')
+             ->fields('c',array('field_contributors_target_id'))
+             ->condition('c.entity_id', $nid,'=')
+             ->execute()
+             ->fetchAll();
+      
+    $result2 = db_select('node__field_related', 'c')
+     ->fields('c',array('field_related_target_id'))
+     ->condition('c.entity_id', $nid,'=')
+     ->execute()
+     ->fetchAll();
+
+    $final_result = array('node'=>$res,'contributors'=>$result1,'related'=>$result2);
+    return $final_result;
+}
