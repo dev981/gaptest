@@ -1,0 +1,7 @@
+drive:
+   version: VERSION
+   js:
+    js/nodeapi.js: {}
+   dependencies:
+    - core/jquery
+    - core/drupal

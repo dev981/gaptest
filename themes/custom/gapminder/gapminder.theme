@@ -1,0 +1,616 @@
+﻿<?php
+
+/**
+ * @file
+ * Functions to support theming in the Gapminder theme.
+ */
+
+use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\Xss;
+use Drupal\Core\Template\Attribute;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Drupal\views\Plugin\views\filter\Standard;
+use Drupal\views\Views;
+/**
+ * Implements hook_preprocess_HOOK() for HTML document templates.
+ *
+ * Adds body classes if certain regions have content.
+ */
+function gapminder_preprocess_html(&$variables) {
+    
+ /*
+ * Add information about the number of sidebars.
+ */
+  if (!empty($variables['page']['sidebar_first']) && !empty($variables['page']['sidebar_second'])) {
+    $variables['attributes']['class'][] = 'layout-two-sidebars';
+  }
+  elseif (!empty($variables['page']['sidebar_first'])) {
+    $variables['attributes']['class'][] = 'layout-one-sidebar';
+    $variables['attributes']['class'][] = 'layout-sidebar-first';
+  }
+  elseif (!empty($variables['page']['sidebar_second'])) {
+    $variables['attributes']['class'][] = 'layout-one-sidebar';
+    $variables['attributes']['class'][] = 'layout-sidebar-second';
+  }
+  else {
+    $variables['attributes']['class'][] = 'layout-no-sidebars';
+  }
+
+  if (!empty($variables['page']['featured_top'])) {
+    $variables['attributes']['class'][] = 'has-featured-top';
+  }
+
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for page templates.
+ */
+
+function gapminder_preprocess_page(&$variables) {
+    global $base_url;    
+    
+    // Assigned the current user on site to $User variable.    
+    
+    $User=\Drupal::currentUser(); 
+    
+   /**
+   * Set the class by cheking current user role.
+   * This varibale is called in page twig template. 
+   */
+         
+    if(in_array('administrator',$User->getRoles()))   
+    {
+        $variables['adminattr']='administrator';   
+    }
+	 elseif(in_array('translator',$User->getRoles()))   
+    {
+        $variables['adminattr']='user translator';   
+    }
+    else
+    {
+        $variables['adminattr']='user';         
+    }
+    
+    // get the cuurent page path by trimming the path '/'    
+    
+    $RequestUri = \Drupal::request()->getRequestUri();    
+    $current_path = \Drupal::service('path.current')->getPath();
+    $Path = trim($current_path, '/');
+    
+    // Set the current language and default language in variables.      
+    
+    $CurrentLanguage=\Drupal::languageManager()->getCurrentLanguage()->getId();
+    $DefaultLanguage=\Drupal::languageManager()->getDefaultLanguage()->getId(); 
+    if($CurrentLanguage!="en")
+	{
+	 $variables['langauge']= "/".$CurrentLanguage;
+	}
+	
+   /**
+   *  Retrieve all languges from site with drupal default function \Drupal::languageManager()->getLanguages()
+   *  and set $options that will have 'language dropdown selector'.
+   */
+    
+    $languages = \Drupal::languageManager()->getLanguages();    
+    $Options='<select name="langselect" id="langselect" class="langselect">';
+    foreach ($languages as $key=>$language)
+    {
+        $selected='';
+        $LanguageName=$language->getName();
+        $LanguageId=$language->getId();        
+        $Url = db_select('url_alias', 'menu')
+                  ->fields('menu',array('alias'))
+                  ->condition('langcode',$LanguageId,'=') 
+                  ->condition('source',$Path,'=') 
+                  ->execute()
+                  ->fetchField();  
+        $LangUrl=$base_url."/".$LanguageId."/".$Path;      
+        if($DefaultLanguage==$LanguageId)
+        {
+            $LangUrl=$base_url."/".$Path;  
+        }
+        if($Url!='' && !empty($Url))
+        {
+            $LangUrl=$base_url."/".$LanguageId."/".$Url;
+            if($DefaultLanguage==$LanguageId)
+            {
+                $LangUrl=$base_url."/".$Url;  
+            }          
+        }
+        if($CurrentLanguage==$LanguageId){$selected='selected';}
+        $Options.='<option value="'.$LangUrl.'" '.$selected.'>'.$LanguageName.'</option>';
+    }
+    
+    // $Options containes 'Language Dropdown Selector' 
+    
+    $Options.='</select>'; 
+    $variables['LangDropdown']=$Options;
+    $variables['base_url']=$base_url;
+    $variables['main_child_menu']='';
+    $variables['allpages']='allpages';
+    
+    // Set the options that apply to both page and maintenance page.
+    
+    _gapminder_process_page($variables);
+
+   /**
+   * Since the title and the shortcut link are both block level elements,
+   * positioning them next to each other is much simpler with a wrapper div.
+   */
+     
+    if (!empty($variables['title_suffix']['add_or_remove_shortcut']) && $variables['title']) {
+        
+   // Add a wrapper div using the title_prefix and title_suffix render elements.
+        
+      $variables['title_prefix']['shortcut_wrapper'] = array(
+        '#markup' => '<div class="shortcut-wrapper clearfix">',
+        '#weight' => 100,
+      );
+      $variables['title_suffix']['shortcut_wrapper'] = array(
+        '#markup' => '</div>',
+        '#weight' => -99,
+      );
+      
+    // Make sure the shortcut link is the first item in title_suffix.
+      
+      $variables['title_suffix']['add_or_remove_shortcut']['#weight'] = -100;
+    }
+  
+    // Related Items sidebar that appears on right
+    
+    if((isset($variables['node']->type->target_id)) && ((strpos($RequestUri,'translations') == false)) && ($variables['node']->type->target_id=="answers" 
+        || $variables['node']->type->target_id=="factpod" || $variables['node']->type->target_id=="test_questions" || $variables['node']->type->target_id=="answers_slideshows"
+        || $variables['node']->type->target_id=="slideshows" || $variables['node']->type->target_id=="visualization"))
+    {
+        $CurrentLanguage=\Drupal::languageManager()->getCurrentLanguage()->getId();
+		$view = Views::getView('related');      
+        if(isset($variables['node']->field_tag->target_id))
+        {
+          $taxonomy_id='';  
+          $TagId = $variables['node']->field_tag->target_id;
+          foreach($variables['node']->field_tag as $fields)
+          {
+              $taxonomy_id.= $fields->target_id."+";
+          }
+          $Filter_1 = rtrim($taxonomy_id,"+");
+          $Filter_2 = $variables['node']->nid->value;
+          $variables['related'] = $view->preview('default', array($Filter_1,$Filter_2));            
+        }  
+        else
+        {
+           if($CurrentLanguage=="fa")
+		   {
+		     $variables['related'] = 'بدون نتیجه'; 
+		   }
+
+		   else if($CurrentLanguage=="sv")
+		   {
+		     $variables['related'] = 'Inga Resultat';
+		   }
+		   
+		   else if($CurrentLanguage=="de")
+		   {
+		     $variables['related'] = 'keine Ergebnisse';
+		   }
+		   else if($CurrentLanguage=="ar")
+		   {
+		     $variables['related'] = 'لا نتائج';
+		   }
+		   else if($CurrentLanguage=="ku")
+		   {
+		     $variables['related'] = 'نەو ريزەلتس';
+		   }
+		   else if($CurrentLanguage=="nl")
+		   {
+		     $variables['related'] = 'Geen resultaten';
+		   }
+		   else if($CurrentLanguage=="fi")
+		   {
+		     $variables['related'] = 'Ei tuloksia';
+		   }
+		   else
+		   {
+		   $variables['related'] = 'No Results'; 
+		   }
+        }
+    }     
+  
+    // Retrieve logo for responsive window  
+    
+      $block = \Drupal\block\Entity\Block::load('mobileheader');
+      $variables['mobile_header_logo'] = \Drupal::entityManager()
+        ->getViewBuilder('block')
+        ->view($block);  
+		/**
+		*  Custom Related functionality on right sidebar
+		*/
+		if(isset($variables['node']->type->target_id))
+     {
+           
+         $variables['nodetype']=$variables['node']->type->target_id;
+      $variables['nodeid']= 'node-'.$variables['node']->nid->value;
+      if((isset($variables['node']->type->target_id)) && ((strpos($RequestUri,'translations') == false)) && ($variables['node']->type->target_id=='answers' || $variables['node']->type->target_id=='factpod' || $variables['node']->type->target_id=='videos' 
+              || $variables['node']->type->target_id=='test_questions' || $variables['node']->type->target_id=='answers_slideshows' || $variables['node']->type->target_id=="slideshows" || $variables['node']->type->target_id=="visualization")){
+     /*
+      * Add related content 
+      */
+            
+                      $nodeid = $variables['node']->nid->value;
+                      $nodeload= \Drupal\node\Entity\Node::load($nodeid);  
+                         
+      $rel = $nodeload->get('field_related');
+      $related_data = array();
+      $node_alias = '';
+      $imageurl = '';
+      $arr=array();
+      foreach($rel as $val){
+           $noderelid= isset($val->target_id) ? $val->target_id : '';
+           $arr[]=$noderelid;
+      }
+   
+       if(!empty($arr))
+     {
+     $query =  db_select('node__field_related', 'n');
+                 $query->join('node_field_data','de','de.nid = n.field_related_target_id');
+                  $query->fields('n',array('field_related_target_id'));
+                  $query->condition('de.langcode',$CurrentLanguage,'='); 
+                  $query->condition('n.field_related_target_id',$arr,'IN'); 
+                  $query->orderBy('de.changed','DESC');
+                  $query->groupBy('n.field_related_target_id');
+                 $res = $query->execute()->fetchAll();
+    foreach($res as $resval)
+                 {
+                     $trgtid = $resval->field_related_target_id;
+                      $nodeload1= \Drupal\node\Entity\Node::load($trgtid);   
+                      $languages = $nodeload1->getTranslationLanguages();
+                      foreach ($languages as $langcode => $language) {  
+                      $translation = $nodeload1->getTranslation($langcode);
+                      $data[$langcode]['title'] = isset($translation->title->value) ? $translation->title->value : '' ;
+                      $data[$langcode]['image'] = isset($translation->field_thumbnail->target_id) ? $translation->field_thumbnail->target_id : '' ;
+                      $data[$langcode]['subtitle'] = isset($translation->field_subtitle->value) ? $translation->field_subtitle->value : '' ;
+      
+                      }
+       $title=isset($data[$CurrentLanguage]['title'])? $data[$CurrentLanguage]['title'] :'';  
+
+        $thumbfid = isset($data[$CurrentLanguage]['image']) ? $data[$CurrentLanguage]['image'] : '';
+        if($thumbfid !=''){
+        $imageload = file_load($thumbfid);
+        $pathuri = isset($imageload->uri->value) ? $imageload->uri->value : '';
+        $imageurl = entity_load('image_style', 'style_130_78')->buildUrl($pathuri);
+        
+        }
+        
+        $subtitle = isset($data[$CurrentLanguage]['subtitle']) ? $data[$CurrentLanguage]['subtitle'] : '';
+        if($title!=''){
+            if($CurrentLanguage=='en'){
+        $node_alias = \Drupal::service('path.alias_manager')->getAliasByPath('node/'. $trgtid);
+            }
+            else{
+                $node_alias = $CurrentLanguage.'/'.\Drupal::service('path.alias_manager')->getAliasByPath('node/'. $trgtid);
+            }
+        }
+        
+        
+        if($title == '' && $subtitle == '' && $imageurl == '' && $node_alias == ''){
+            $noresultbehaviour = 'No results';
+        }
+        else{
+            $noresultbehaviour = '';
+        }
+        if($title!='' && $subtitle !='' && $imageurl!=''){
+        $related_data[]['data'] = array('rel_title' => $title,
+                              'rel_subtitle' => $subtitle,
+                              'rel_imageurl' => $imageurl,
+                              'rel_alias' => $node_alias 
+                                                           
+                        );    
+        }
+
+                 }
+     }
+    // } 
+     
+       $related_count = count($related_data);   
+       if($related_count == 0){
+		   if($CurrentLanguage=="fa")
+		   {
+		     $related_data[]['nodata'] = 'بدون نتیجه'; 
+		   }
+
+		   else if($CurrentLanguage=="sv")
+		   {
+		     $related_data[]['nodata'] = 'Inga Resultat';
+		   }
+		   
+		   else if($CurrentLanguage=="de")
+		   {
+		     $related_data[]['nodata'] = 'keine Ergebnisse';
+		   }
+		   else if($CurrentLanguage=="ar")
+		   {
+		    $related_data[]['nodata'] = 'لا نتائج';
+		   }
+		   else if($CurrentLanguage=="ku")
+		   {
+		    $related_data[]['nodata'] = 'نەو ريزەلتس';
+		   }
+		   else if($CurrentLanguage=="nl")
+		   {
+		     $related_data[]['nodata'] = 'Geen resultaten';
+		   }
+		   else if($CurrentLanguage=="fi")
+		   {
+		     $related_data[]['nodata'] = 'Ei tuloksia';
+		   }
+		   else
+		   {$related_data[]['nodata'] = 'No Results';}
+            
+        
+       }
+        $variables['related_icons'] =  $related_data;
+      }
+     }
+	 /**
+		*  end here
+		*/
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for maintenance-page.html.twig.
+ */
+
+function gapminder_preprocess_maintenance_page(&$variables) {
+  
+ /**
+ * By default, site_name is set to Drupal if no db connection is available
+ * or during site installation. Setting site_name to an empty string makes
+ * the site and update pages look cleaner.
+ * @see template_preprocess_maintenance_page
+ */
+    
+  if (!$variables['db_is_active']) {
+    $variables['site_name'] = '';
+  }
+
+  // Bartik has custom styling for the maintenance page.
+  $variables['#attached']['library'][] = 'gapminder/maintenance_page';
+
+  // Set the options that apply to both page and maintenance page.
+  
+  _gapminder_process_page($variables);
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for node.html.twig.
+ */
+function gapminder_preprocess_node(&$variables) {
+   
+ /**
+ * Remove the "Add new comment" link on teasers or when the comment form is
+ * displayed on the page.
+ */
+    global $base_url;
+    $variables['base_url']=$base_url;
+    $variables['overlayimg']=$base_url.'/themes/custom/gapminder/images/opc-ajax-loader.gif'; 
+    if ($variables['teaser'] || !empty($variables['content']['comments']['comment_form'])) 
+        {
+            unset($variables['content']['links']['comment']['#links']['comment-add']);
+        }
+    if (($node = \Drupal::routeMatch()->getParameter('node')) && $node instanceof \Drupal\node\NodeInterface) 
+        {
+            $languages = \Drupal::languageManager()->getLanguages();
+            $AllLanguages=count($languages);
+            $variables['nodenid']=$node->nid->value;
+            $variables['nodehtml']='';
+        if($node->type->target_id=="visualization")
+        {
+            $variables['#attached']['library'][] = 'gapminder/remote-custom';            
+            $variables['tooltype'] = $node->field_tool_type->value;    
+            $variables['state'] = $node->field_state->value;
+            $variables['language'] = $node->field_language->value;          
+            $variables['data'] = $node->field_data->value; 
+        }
+        else
+        {
+           $CurrentLanguage=\Drupal::languageManager()->getCurrentLanguage()->getId();
+           if($CurrentLanguage=="fa")
+           {
+               $variables['currentlang']= 'اشتراک گذاری';
+			   $variables['thanklang']= 'با تشکر از';
+			   $variables['publisheddata']='منتشر شده در';
+           }
+		   
+           else if($CurrentLanguage=="sv")
+           {
+                $variables['currentlang']= 'del';
+				 $variables['thanklang']= 'tack vare';
+				  $variables['publisheddata']='publicerad på';
+           }
+           
+            else if($CurrentLanguage=="de")
+           {
+                $variables['currentlang']= 'Aktie';
+				$variables['thanklang']= 'Dank an';
+				 $variables['publisheddata']='veröffentlicht am';
+           }
+		   else if($CurrentLanguage=="ar")
+           {
+                $variables['currentlang']= 'حصة';
+				$variables['thanklang']= 'ب�?ضل';
+				 $variables['publisheddata']='نشرت يوم';
+           }
+		   else if($CurrentLanguage=="ku")
+           {
+                $variables['currentlang']= 'شێيە';
+				$variables['thanklang']= 'ثانكس تو';
+				 $variables['publisheddata']='پەبليشت ئۆن';
+           }
+		    else if($CurrentLanguage=="nl")
+		   {
+		        $variables['currentlang']= 'aandeel';
+				$variables['thanklang']= 'Dankzij';
+				$variables['publisheddata']='gepubliceerd op';
+		   }
+		   else if($CurrentLanguage=="fi")
+		   {
+		        $variables['currentlang']= 'osake';
+				$variables['thanklang']= 'Kiitokset';
+				$variables['publisheddata']='julkaistu';
+		   }
+           else
+           {
+               $variables['currentlang']= 'Share';
+			   $variables['thanklang']= 'Thanks to';
+			    $variables['publisheddata']='Published On';
+           }
+		   
+		   $total_values=count($node->field_contributors);
+
+   // Implements Thanks to part for node section
+            
+            $UserPicture=array();
+            for($i=0;$i<$total_values;$i++)
+            {
+               $uid=$node->field_contributors[$i]->target_id; 
+               $ContribLoad=user_load($uid);
+               $Username = isset($ContribLoad->name->value) ? $ContribLoad->name->value : '';
+               if(isset($ContribLoad->user_picture->entity))
+               {
+                    $ImageSrc=$ContribLoad->user_picture->entity->url(); 
+                    $UserPicture[$uid]=array('0' => $Username,'1'=> $ImageSrc);
+               }
+               else{
+                  $UserPicture[$uid]=array('0' => $Username, '1'=> $base_url."/themes/custom/gapminder/images/images.png");
+               }
+            }
+            $variables['user_pictures']=$UserPicture;
+
+    // Set class for videos on node page
+            
+            $variables['video_url']='';
+            if(isset($node->field_video_url->value) && ($node->field_video_url->value))
+            {
+                $GetHost = parse_url($node->field_video_url->value);            
+                if(isset($GetHost['host']) && (strpos($GetHost['host'],'vimeo') !== false))
+                {
+                    $variables['video_class']='vimeo';  
+                }
+                else
+                {
+                    $variables['video_class']='other';    
+                }
+                $variables['video_url']=$node->field_video_url->value;
+                $variables['node_date_time']=date("M d, Y",$variables['node']->getCreatedTime());    
+            } 
+        }
+        }  
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for block.html.twig.
+ */
+function gapminder_preprocess_block(&$variables)
+{
+  if ($variables['plugin_id'] == 'system_branding_block') {
+    $variables['attributes']['class'][] = 'clearfix';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for menu.html.twig.
+ */
+function gapminder_preprocess_menu(&$variables) {
+  $variables['attributes']['class'][] = 'clearfix';
+}
+
+/**
+ * Helper function for handling the gapminder name and slogan.
+ */
+function _gapminder_process_page(&$variables) 
+{
+  $site_config = \Drupal::config('system.site');
+  
+  // Always print the site name and slogan, but if they are toggled off, we'll just hide them visually.
+  
+  $variables['hide_site_name']   = theme_get_setting('features.name') ? FALSE : TRUE;
+  $variables['hide_site_slogan'] = theme_get_setting('features.slogan') ? FALSE : TRUE;
+  if ($variables['hide_site_name']) {
+      
+  // If toggle_name is FALSE, the site_name will be empty, so we rebuild it.
+      
+    $variables['site_name'] = String::checkPlain($site_config->get('name'));
+  }
+  if ($variables['hide_site_slogan']) {
+      
+  // If toggle_site_slogan is FALSE, the site_slogan will be empty, so we rebuild it.
+      
+    $variables['site_slogan'] = Xss::filterAdmin($site_config->get('slogan'));
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for user.html.twig.
+ */
+function gapminder_preprocess_user(&$variables)
+{
+    global $base_url;
+    $variables['base_url']=$base_url;    
+    $CurrentUser =\Drupal::service('path.current')->getPath();
+    $ExplodeUser=explode('/',$CurrentUser);
+    $uid=end($ExplodeUser);
+    
+// Set the Social icons in user profile page
+    
+    if(is_numeric($uid))
+    {
+        $userload=user_load($uid);
+        if($userload->field_facebook->value)
+        {
+         $variables['facebook']=$userload->field_facebook->value;  
+        }
+        if($userload->field_linkedin->value)
+        {
+         $variables['linkedin']=$userload->field_linkedin->value;  
+        }
+        if($userload->field_twitter->value)
+        {
+         $variables['twitter']=$userload->field_twitter->value;  
+        }
+        if($userload->field_instagram->value)
+        {
+         $variables['instagram']=$userload->field_instagram->value;  
+        } 
+        
+                $count = count($userload->field_contribution);
+        $array_count = 0;        
+        for ($index = 0; $index < $count; $index++) {
+            $check_empty = $userload->field_contribution[$index]->value;
+            if($check_empty == ''){
+                $array_count++;
+            }
+            else{
+                  $name = 'Contributions';
+                  $item.= '<div class="field-item">'.$userload->field_contribution[$index]->value.'</div>';
+            }
+           
+        }       
+        $total_count = $count - $array_count;
+        if($total_count > 0){
+            $t_count = $total_count;
+        }
+        else{
+            $t_count = '';
+        }
+        $output = '<div class="field field-user--field-contribution field-name-field-contribution field-type-string field-label-above" data-quickedit-field-id="user/1/field_contribution/en/full">
+                <div class="field-label contribution-count">'.$t_count. ' '.$name.'</div>';
+        $output.=  '<div class="field-items">';
+        $output.= $item;
+        $output.= '</div></div>';
+        $variables['contribution']= $output;
+
+    }
+}
+function gapminder_js_alter(&$javascript, \Drupal\Core\Asset\AttachedAssetsInterface $assets)
+{
+    $javascript['core/assets/vendor/jquery/jquery.min.js']['scope']='header';
+}

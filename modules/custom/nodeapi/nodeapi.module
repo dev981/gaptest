@@ -1,0 +1,706 @@
+<?php
+ module_load_include('php','nodeapi','googleclient/src/Google/Client');
+ module_load_include('php','nodeapi','googleclient/src/Google/Service/Oauth2');
+ 
+function nodeapi_menu()
+{
+    $items['gdriveapi'] = array(
+    'title' => 'Google drive api',
+    'description' => 'Google drive api.',
+    // The name of the route from foobar.routing.yml
+    'route_name' => 'nodeapi_gdrive',
+  );
+    
+   
+ 
+  return $items;
+}
+
+ 
+
+
+function nodeapi_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id)
+
+{
+      $form['#attached']['library'][] = 'nodeapi/drive';
+
+    if($form_id=='node_answers_slideshows_edit_form')
+    {
+         
+         
+          if(!empty($_SESSION['urlmessage']))
+          {
+             
+              $permissionmessage=$_SESSION['urlmessage'];
+              drupal_set_message($permissionmessage,'error');
+              unset($_SESSION['urlmessage']);
+          }
+          
+           if(!empty($_SESSION['permmessage']))
+          {
+              $permissionmsg=$_SESSION['permmessage'];
+              drupal_set_message($permissionmsg,'error');
+              unset($_SESSION['permmessage']);
+          }
+          
+       module_load_include('inc','nodeapi','nodegapi');
+       $authUrl = getAuthorizationUrl("", "");
+       $node = \Drupal::routeMatch()->getParameter('node');
+       $_SESSION['url']= $_SERVER['REQUEST_URI'];
+   
+       $langid=$node->prepareLangcode();
+       
+        $node_es = $node->getTranslation($langid);
+        $node_id=$node->id();
+        $node_body=$node_es->body->value;
+       
+        $doc = new DOMDocument();
+        $doc->loadHTML($node_body);
+       
+       
+        $xpath = new DOMXPath($doc);
+        $src = $xpath->evaluate("string(//iframe/@src)");
+        $srcexplode=explode("/",$src);
+        
+        $_SESSION['fileid']=$srcexplode[5];
+
+        $_SESSION['nodeid']=$node_id;
+       
+        $_SESSION['language_id']=$langid;
+         global $base_url;
+        if($src!="")
+        {
+		if($langid=="fa")
+                {
+                  $lngtext = mb_convert_encoding('ترجمه اسلاید ', 'HTML-ENTITIES', "UTF-8");
+                }
+		else if($langid=="ar")
+		{
+		  $lngtext = mb_convert_encoding('ترجمة الشرائح ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="ku")
+		{
+		  $lngtext = mb_convert_encoding('ترانزلێيت سلايد ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="de")
+		{
+		  $lngtext = mb_convert_encoding('Übersetzen Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="pt-br")
+		{
+		  $lngtext = mb_convert_encoding('Traduzir Deslize ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="sv")
+		{
+		  $lngtext = mb_convert_encoding('Trans Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="nl")
+		{
+		$lngtext = mb_convert_encoding('Vertaal Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else if($langid=="fi")
+		{
+		$lngtext = mb_convert_encoding('Käännä Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else
+        {
+           
+            $lngtext="Translate Slide";
+        }
+       
+       $form['drive_link']=array(
+          
+          '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>'
+            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
+           . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+           '#weight'=>6
+       );
+       
+        }
+       
+    
+    }
+    
+    if($form_id=="node_answers_slideshows_form")
+    {
+       
+       $node = \Drupal::routeMatch()->getParameter('node');
+        if(!empty($node))
+        {
+
+         if(!empty($_SESSION['urlmessage']))
+          {
+             
+              $permissionmessage=$_SESSION['urlmessage'];
+              drupal_set_message($permissionmessage,'error');
+              unset($_SESSION['urlmessage']);
+          }
+         
+           if(!empty($_SESSION['permmessage']))
+          {
+              $permissionmsg=$_SESSION['permmessage'];
+              drupal_set_message($permissionmsg,'error');
+              unset($_SESSION['permmessage']);
+          }
+         module_load_include('inc','nodeapi','nodegapi');
+         $authUrl = getAuthorizationUrl("", "");
+       
+        
+         $node = \Drupal::routeMatch()->getParameter('node');
+         $_SESSION['url']= $_SERVER['REQUEST_URI'];
+         $currenturl = $_SERVER['REQUEST_URI'];
+         $langid = end(explode('/',$currenturl));
+         
+       
+        $node_es = $node->getTranslation($langid);
+        $node_id=$node->id();
+        $node_body=$node_es->body->value;
+        $doc = new DOMDocument();
+        $doc->loadHTML($node_body);
+       
+        $xpath = new DOMXPath($doc);
+        $src = $xpath->evaluate("string(//iframe/@src)");
+     
+        $srcexplode=explode("/",$src);
+        
+        $_SESSION['fileid']=$srcexplode[5];
+       
+        $_SESSION['nodeid']=$node_id;
+        $_SESSION['language_id']=$langid;
+              global $base_url;
+        if($src!="")
+        {
+                if($langid=="fa")
+                {
+                  $lngtext = mb_convert_encoding('ترجمه اسلاید ', 'HTML-ENTITIES', "UTF-8");
+                }
+		else if($langid=="ar")
+		{
+		  $lngtext = mb_convert_encoding('ترجمة الشرائح ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="ku")
+		{
+		  $lngtext = mb_convert_encoding('ترانزلێيت سلايد ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="de")
+		{
+		  $lngtext = mb_convert_encoding('Übersetzen Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="pt-br")
+		{
+		  $lngtext = mb_convert_encoding('Traduzir Deslize ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="sv")
+		{
+		  $lngtext = mb_convert_encoding('Trans Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="nl")
+		{
+		$lngtext = mb_convert_encoding('Vertaal Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else if($langid=="fi")
+	    {
+		$lngtext = mb_convert_encoding('Käännä Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else
+        {
+           
+            $lngtext="Translate Slide";
+        }
+        
+        
+       
+             $form['drive_link']=array(
+          
+             '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'.$node_id .'"/>'
+            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
+            
+            
+            . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+           '#weight'=>6
+             );
+        }
+        }
+    }
+    
+    if($form_id=="node_test_questions_form")
+    {
+        $node = \Drupal::routeMatch()->getParameter('node');
+        if(!empty($node))
+        {
+         if(!empty($_SESSION['urlmessage']))
+          {
+             
+              $permissionmessage=$_SESSION['urlmessage'];
+              drupal_set_message($permissionmessage,'error');
+              unset($_SESSION['urlmessage']);
+          }
+         
+           if(!empty($_SESSION['permmessage']))
+          {
+              $permissionmsg=$_SESSION['permmessage'];
+              drupal_set_message($permissionmsg,'error');
+              unset($_SESSION['permmessage']);
+          }
+           module_load_include('inc','nodeapi','nodegapi');
+           $authUrl = getAuthorizationUrl("", "");
+            $node = \Drupal::routeMatch()->getParameter('node');
+         $_SESSION['url']= $_SERVER['REQUEST_URI'];
+         $currenturl = $_SERVER['REQUEST_URI'];
+         $langid = end(explode('/',$currenturl));
+         $node_es = $node->getTranslation($langid);
+        $node_id=$node->id();
+        $node_body=$node_es->body->value;
+        $doc = new DOMDocument();
+        $doc->loadHTML($node_body);
+       
+        $xpath = new DOMXPath($doc);
+        $src = $xpath->evaluate("string(//iframe/@src)");
+     
+        $srcexplode=explode("/",$src);
+         $_SESSION['fileid']=$srcexplode[5];
+       
+        $_SESSION['nodeid']=$node_id;
+        $_SESSION['language_id']=$langid;
+         global $base_url;
+        if($src!="")
+        {
+                if($langid=="fa")
+                {
+                   $lngtext = mb_convert_encoding('ترجمه اسلاید ', 'HTML-ENTITIES', "UTF-8");
+                }
+		else if($langid=="ar")
+		{
+		  $lngtext = mb_convert_encoding('ترجمة الشرائح ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="ku")
+		{
+		  $lngtext = mb_convert_encoding('ترانزلێيت سلايد ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="de")
+		{
+		  $lngtext = mb_convert_encoding('Übersetzen Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="pt-br")
+		{
+		  $lngtext = mb_convert_encoding('Traduzir Deslize ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="sv")
+		{
+		  $lngtext = mb_convert_encoding('Trans Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="nl")
+		{
+		$lngtext = mb_convert_encoding('Vertaal Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else if($langid=="fi")
+		{
+		$lngtext = mb_convert_encoding('Käännä Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else
+        {
+           
+            $lngtext="Translate Slide";
+        }
+        
+        
+       
+        
+             $form['drive_link']=array(
+          
+             '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'.$node_id .'"/>'
+            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
+            
+            
+            . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+           '#weight'=>6
+             );
+        }
+        }
+       
+    }
+    
+    
+    
+    if($form_id=="node_test_questions_edit_form")
+    {
+       if(!empty($_SESSION['urlmessage']))
+          {
+             
+              $permissionmessage=$_SESSION['urlmessage'];
+              drupal_set_message($permissionmessage,'error');
+              unset($_SESSION['urlmessage']);
+          }
+          
+           if(!empty($_SESSION['permmessage']))
+          {
+              $permissionmsg=$_SESSION['permmessage'];
+              drupal_set_message($permissionmsg,'error');
+              unset($_SESSION['permmessage']);
+          }
+          
+       module_load_include('inc','nodeapi','nodegapi');
+       $authUrl = getAuthorizationUrl("", "");
+       $node = \Drupal::routeMatch()->getParameter('node');
+       $_SESSION['url']= $_SERVER['REQUEST_URI'];
+   
+       $langid=$node->prepareLangcode();
+       
+        $node_es = $node->getTranslation($langid);
+        $node_id=$node->id();
+        $node_body=$node_es->body->value;
+       
+        $doc = new DOMDocument();
+        $doc->loadHTML($node_body);
+       
+       
+        $xpath = new DOMXPath($doc);
+        $src = $xpath->evaluate("string(//iframe/@src)");
+        $srcexplode=explode("/",$src);
+        
+        $_SESSION['fileid']=$srcexplode[5];
+
+        $_SESSION['nodeid']=$node_id;
+       
+        $_SESSION['language_id']=$langid;
+        global $base_url;
+        if($src!="")
+        {
+       if($langid=="fa")
+        {
+           $lngtext = mb_convert_encoding('ترجمه اسلاید ', 'HTML-ENTITIES', "UTF-8");
+        }
+		else if($langid=="ar")
+		{
+		  $lngtext = mb_convert_encoding('ترجمة الشرائح ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="ku")
+		{
+		  $lngtext = mb_convert_encoding('ترانزلێيت سلايد ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="de")
+		{
+		  $lngtext = mb_convert_encoding('Übersetzen Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="pt-br")
+		{
+		  $lngtext = mb_convert_encoding('Traduzir Deslize ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="sv")
+		{
+		  $lngtext = mb_convert_encoding('Trans Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="nl")
+		{
+		$lngtext = mb_convert_encoding('Vertaal Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else if($langid=="fi")
+		{
+		$lngtext = mb_convert_encoding('Käännä Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else
+        {
+           
+            $lngtext="Translate Slide";
+        }
+		
+       $form['drive_link']=array(
+           
+          '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>'
+            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
+           . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+           '#weight'=>6
+       );
+       
+        }
+       
+       
+    }
+    
+    
+    if($form_id=="node_answers_form")
+    {
+        $node = \Drupal::routeMatch()->getParameter('node');
+        if(!empty($node))
+        {
+         if(!empty($_SESSION['urlmessage']))
+          {
+             
+              $permissionmessage=$_SESSION['urlmessage'];
+              drupal_set_message($permissionmessage,'error');
+              unset($_SESSION['urlmessage']);
+          }
+         
+           if(!empty($_SESSION['permmessage']))
+          {
+              $permissionmsg=$_SESSION['permmessage'];
+              drupal_set_message($permissionmsg,'error');
+              unset($_SESSION['permmessage']);
+          }
+           module_load_include('inc','nodeapi','nodegapi');
+           $authUrl = getAuthorizationUrl("", "");
+            $node = \Drupal::routeMatch()->getParameter('node');
+         $_SESSION['url']= $_SERVER['REQUEST_URI'];
+         $currenturl = $_SERVER['REQUEST_URI'];
+         $langid = end(explode('/',$currenturl));
+         $node_es = $node->getTranslation($langid);
+        $node_id=$node->id();
+        $node_body=$node_es->body->value;
+        $doc = new DOMDocument();
+        $doc->loadHTML($node_body);
+       
+        $xpath = new DOMXPath($doc);
+        $src = $xpath->evaluate("string(//iframe/@src)");
+     
+        $srcexplode=explode("/",$src);
+         $_SESSION['fileid']=$srcexplode[5];
+       
+        $_SESSION['nodeid']=$node_id;
+        $_SESSION['language_id']=$langid;
+         global $base_url;
+        if($src!="")
+        {
+       if($langid=="fa")
+        {
+           $lngtext = mb_convert_encoding('ترجمه اسلاید ', 'HTML-ENTITIES', "UTF-8");
+        }
+		else if($langid=="ar")
+		{
+		  $lngtext = mb_convert_encoding('ترجمة الشرائح ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="ku")
+		{
+		  $lngtext = mb_convert_encoding('ترانزلێيت سلايد ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="de")
+		{
+		  $lngtext = mb_convert_encoding('Übersetzen Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="pt-br")
+		{
+		  $lngtext = mb_convert_encoding('Traduzir Deslize ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="sv")
+		{
+		  $lngtext = mb_convert_encoding('Trans Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="nl")
+		{
+		$lngtext = mb_convert_encoding('Vertaal Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else if($langid=="fi")
+	    {
+		$lngtext = mb_convert_encoding('Käännä Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else
+        {
+           
+            $lngtext="Translate Slide";
+        }
+        
+        
+       
+             $form['drive_link']=array(
+          
+             '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'.$node_id .'"/>'
+            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
+            
+            
+            . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+           '#weight'=>6
+             );
+        }
+        }
+       
+    }
+    
+    
+    
+     if($form_id=="node_answers_edit_form")
+    {
+       if(!empty($_SESSION['urlmessage']))
+          {
+             
+              $permissionmessage=$_SESSION['urlmessage'];
+              drupal_set_message($permissionmessage,'error');
+              unset($_SESSION['urlmessage']);
+          }
+          
+           if(!empty($_SESSION['permmessage']))
+          {
+              $permissionmsg=$_SESSION['permmessage'];
+              drupal_set_message($permissionmsg,'error');
+              unset($_SESSION['permmessage']);
+          }
+          
+       module_load_include('inc','nodeapi','nodegapi');
+       $authUrl = getAuthorizationUrl("", "");
+       $node = \Drupal::routeMatch()->getParameter('node');
+       $_SESSION['url']= $_SERVER['REQUEST_URI'];
+   
+       $langid=$node->prepareLangcode();
+       
+        $node_es = $node->getTranslation($langid);
+        $node_id=$node->id();
+        $node_body=$node_es->body->value;
+       
+        $doc = new DOMDocument();
+        $doc->loadHTML($node_body);
+       
+       
+        $xpath = new DOMXPath($doc);
+        $src = $xpath->evaluate("string(//iframe/@src)");
+        $srcexplode=explode("/",$src);
+        
+        $_SESSION['fileid']=$srcexplode[5];
+
+        $_SESSION['nodeid']=$node_id;
+       
+        $_SESSION['language_id']=$langid;
+        global $base_url;
+        if($src!="")
+        {
+	   if($langid=="fa")
+        {
+           $lngtext = mb_convert_encoding('ترجمه اسلاید ', 'HTML-ENTITIES', "UTF-8");
+        }
+		else if($langid=="ar")
+		{
+		  $lngtext = mb_convert_encoding('ترجمة الشرائح ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="ku")
+		{
+		  $lngtext = mb_convert_encoding('ترانزلێيت سلايد ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="de")
+		{
+		  $lngtext = mb_convert_encoding('Übersetzen Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="pt-br")
+		{
+		  $lngtext = mb_convert_encoding('Traduzir Deslize ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="sv")
+		{
+		  $lngtext = mb_convert_encoding('Trans Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+		else if($langid=="nl")
+		{
+	    $lngtext = mb_convert_encoding('Vertaal Slide ', 'HTML-ENTITIES', "UTF-8");
+	    }
+        else if($langid=="fi")
+        {
+		$lngtext = mb_convert_encoding('Käännä Slide ', 'HTML-ENTITIES', "UTF-8");
+		}
+        else
+        {
+           
+            $lngtext="Translate Slide";
+        }
+		
+       $form['drive_link']=array(
+           
+          '#markup'=>'<div class="drive_link"><input class="authenticate" type="hidden" value="'.$authUrl.'"/><input class="newnodeurl" type="hidden" value="'. $node_id.'"/>'
+            .'<input class="baseurlpath" type="hidden" value="'.$base_url.'"/>'
+           . '<a class="linkdrive" href="javascript:void(0)">'.$lngtext.'</a></div>',
+           '#weight'=>6
+       );
+       
+        }
+       
+       
+    }
+    return $form;
+}
+
+function nodeapi_node_presave($node){
+     /**
+	  *  node form values
+	  */
+	$type = $node->type->target_id;
+        if($type == 'factpod' || $type == 'answers' || $type == 'answers_slideshows' || $type == 'test_questions' || $type == 'slideshows'){
+                $j=0;
+                $related_values = array();
+		$title = $node->title->value; 
+		$content_translation_outdated = $node->content_translation_outdated->value;
+		$body = $node->body->value;
+		$field_order = $node->field_order->value;
+		$field_subtitle = $node->field_subtitle->value;
+		$field_video_url = $node->field_video_url->value;
+                $pre_total_contributors = count($node->field_contributors);
+                $thumbnail_image = $node->field_thumbnail->entity->fid->value;
+                $related = $node->field_related;
+                $total_related = count($node->field_related); 
+                $nid = $node->nid->value;
+                $languageid=\Drupal::languageManager()->getCurrentLanguage()->getId();
+            
+               // $related = 
+		 /**
+		  *  database save values
+		  */
+		$nodeload = \Drupal::routeMatch()->getParameter('node');
+		 $pre_title = $nodeload->title->value;
+		 $pre_content_translation_outdated = $nodeload->content_translation_outdated->value;
+		 $pre_body = $nodeload->body->value;
+		 $pre_field_subtitle = $nodeload->field_subtitle->value;
+		 $pre_field_order = $nodeload->field_order->value;
+		 $pre_field_subtitle = $nodeload->field_subtitle->value;
+		 $pre_field_video_url = $nodeload->field_video_url->value;
+                 $total_contributors =count($nodeload->field_contributors);
+                 $pre_thumbnail_image = $nodeload->field_thumbnail->entity->fid->value;
+                 $pre_related = $nodeload->field_related;
+                 $pre_total_related = count($nodeload->field_related); 
+                   
+               
+                 for($i=0;$i<$total_contributors;$i++)
+                 {
+                 $pre_field_contribution = $nodeload->field_contributors[$i]->target_id;
+                 }
+		$check = 0;
+		if($title != $pre_title || $content_translation_outdated != $pre_content_translation_outdated){
+		$check = 1;
+		}
+		if($body != $pre_body || $field_order != $pre_field_order){
+		$check = 1;
+		}
+		if($field_subtitle != $pre_field_subtitle || $field_video_url != $pre_field_video_url || $thumbnail_image != $pre_thumbnail_image){
+		$check = 1;
+		}
+                for(;$j<$total_related;$j++)
+                {       
+                $related_val = $node->field_related[$j]->target_id; 
+                $pre_related_val = $nodeload->field_related[$j]->target_id; 
+                if($related_val != $pre_related_val){
+                    $check = 1;
+                 }
+		}
+                if($total_related !=$pre_total_related){
+                $check = 1;
+                }
+
+		$account = \Drupal::currentUser();
+		$uid = $account->id();
+                    
+                if($uid!=1){
+	        $values=array();
+                $i=0;
+           
+                       for(;$i<$pre_total_contributors;$i++)
+                {
+                           $values[$i] = array('target_id' => $node->field_contributors[$i]->target_id);
+		}
+ 
+                if($check == 1){
+                 $values[] = array('target_id' =>$uid);
+              }
+               $node->field_contributors = $values;
+                }
+                
+ 
+	}
+     
+}
+     
+
+
+    

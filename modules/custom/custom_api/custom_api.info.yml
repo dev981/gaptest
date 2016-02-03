@@ -1,0 +1,5 @@
+name: Custom Api
+type: module
+description: 'A module for API part'
+package: API modules
+core: 8.x

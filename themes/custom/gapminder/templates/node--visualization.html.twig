@@ -1,0 +1,81 @@
+{#
+/**
+ * @file
+ * Template for the Visualization page
+ *
+ * Available variables
+ * page: Contains an object of content of the page.
+ * sidebar_first: The blocks to be displayed as per this region.
+ * label: The label(title) of the content. 
+ * content: The object content of the page.
+ * base_url: The base path of the site.
+ * video_class: The video class of the content.
+ * video_url: The video url of the content.
+ * node_date_time: The date and time of the content created.
+ * body: The description of the node.
+ * pictures: The user picture.
+ * user_pictures: The contributed user images if available.
+ * overlayimg: The source path of the overlay image.
+ * tooltype: Type of chart is used.
+ * nodenid: The node id of the page.
+ */
+#}
+
+
+<style>#page-title{display:none}</style>
+{% if page.sidebar_first %}
+    <div class="fc-content-left">
+{% endif %}      
+<div class="page-conatiner fc">
+        <div class="fc-heading-1">
+            {{ label }}
+        </div>
+        <div class="fc-sub-heading">
+            {{ content.field_factpod_number }}
+        </div>
+        
+        <!-- div for vizabi chart -->
+        
+        <div class="vizabi" style="width: 100%;position:relative;float:left" id="gapminder-vizabi-tool">
+            <div style="position: absolute; top: 0;bottom: 0; left: 0; right: 0;" id="vizabi-chart"></div>  
+        </div>
+        <div class="fc-left-part">                      
+            <div class="fc-content-part">
+                {{ content.body }}
+            </div>
+        </div>
+        <div class="fc-right-part">
+            <div class="a2a_kit">
+                <h2 class="heading-4">{{ 'Share'|t }}</h2>
+                <a class="a2a_button_facebook"> <img alt="Facebook" border="0" src="{{ base_url }}/themes/custom/gapminder/images/facebook.png" width="32" /> </a>
+                <a class="a2a_button_twitter"> <img alt="Twitter" border="0" src="{{ base_url }}/themes/custom/gapminder/images/twitter.png" width="32" /> </a>
+                <a class="a2a_button_google_plus"> <img alt="Google+" border="0" src="{{ base_url }}/themes/custom/gapminder/images/message.png" width="32" /> </a>
+                <a class="a2a_dd" href="http://www.addtoany.com/share_save"> <img alt="Share" border="0" src="{{ base_url }}/themes/custom/gapminder/images/more.png" width="32" /> </a>
+            </div>   
+            {% if not user_pictures is empty %}
+                <div class="fc-contributors">
+                    <h2 class="heading-4">{{ 'Thanks'|t }} {{ 'to'|t }}</h2>
+                        {% for key,value in user_pictures %}
+                            <a href="{{ base_url }}/user/{{ key }}"><img src="{{ value }}" height="28" width="28"></a>                            
+                        {% endfor %}
+                </div>
+            {% endif %}            
+        </div>       
+</div>
+{% if page.sidebar_first %}
+    </div>
+    <div id="sidebar-second" class="fc-content-right">
+        {{ page.sidebar_first }}
+    </div>
+{% endif %}  
+<div class="overlay_img"><img src="{{ overlayimg }}"></div>
+<input type="hidden" id="chart_type" value="{{tooltype}}">
+<input type="hidden" id="base_url" value="{{base_url}}">
+<input type="hidden" id="node_nid" value="{{nodenid}}">
+<input type="hidden" id="state-tags">
+<div id="obj"></div>
+<script type="text/javascript">
+    jQuery('#obj').data('state',{{(state|json_encode|raw)}});
+    jQuery('#obj').data('lang',{{(language|json_encode|raw)}});    
+    jQuery('#obj').data('data',{{(data|json_encode|raw)}});      
+</script>

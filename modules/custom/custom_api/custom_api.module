@@ -1,0 +1,94 @@
+<?php
+/**
+ * @File
+ * custom api module for Gapminder.
+ * @author Manish Jain
+ */
+
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Entity\EntityInterface;
+
+
+/**
+ * Implements hook_node_update()
+ */
+function custom_api_node_update($node) 
+{
+    if(isset($node->default_langcode->value) && ($node->default_langcode->value==1))
+    {        
+        node_mail('update',$node);
+    }
+}
+
+/**
+ * Implements hook_node_insert()
+ */
+function custom_api_node_insert($node) 
+{
+    node_mail('create',$node);
+}
+
+/**
+ * Implements hook_mail() for send a mail
+ */
+function node_mail($arg,$node)
+{
+        global $base_url;
+        $result = db_query("SELECT `entity_id` FROM `user__roles` WHERE `roles_target_id`='translator'");        
+     
+        $Ids = array();
+        foreach ($result as $item) 
+           {
+            $Ids[] = $item->entity_id;
+           }    
+
+        if(!empty($Ids))
+        {
+            $Admin=user_load(1);
+            $AdminMail=$Admin->mail->value;
+                       
+            foreach($Ids as $TranslatorId)
+            {
+                $account=user_load($TranslatorId);
+                $Title = $node->title->value;
+                $Type = $node->type->target_id;        
+
+                if($arg=='create')
+                {
+                    $Content = t('A Node Created with title "'.$Title.'".<br/><br/>Click on below link to translate the node <br/><br/>'
+                           . '<a href="'.$base_url.'/node/'.$node->nid->value.'/translations">'.$Title.'</a>');
+                    $Subject = t('Node Created');
+                }             
+                else
+                {
+                    $Content = t('A Node has been updated with title "'.$Title.'".<br/><br/>Click on below link to translate the node <br/><br/>'
+                              . '<a href="'.$base_url.'/node/'.$node->nid->value.'/translations">'.$Title.'</a>');
+                    $Subject = t('A node has been updated');
+                }
+                 $system = \Drupal::service('plugin.manager.mail')->getInstance(array('module' => 'example', 'key' => 'notice'));
+
+                 $params['account'] = $account;
+
+                 $params = [
+                   'headers' => [
+                     'MIME-Version' => '1.0',
+                     'Content-Type' => 'text/html; charset=UTF-8; format=flowed; delsp=yes',
+                     'Content-Transfer-Encoding' => '8Bit',
+                     'X-Mailer' => 'Drupal',
+                     'From'=> 'Gapminder<'.$AdminMail.'>',
+                     'Sender'=> $AdminMail ,
+                     'Reply-to' => $AdminMail
+                   ],
+                   'to' => $account->mail->value,
+                   'body' => $Content,
+                   'subject' => $Subject,
+                   'from' => $AdminMail,
+                   'reply-to' => $AdminMail,
+                   // with not success
+                 ];
+
+                 $send = $system->mail($params);                   
+            }
+        }
+}

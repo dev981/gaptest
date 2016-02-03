@@ -1,0 +1,7 @@
+nodeapi_gdrive:
+  path: 'gdriveapi'
+  defaults:
+    _controller: '\Drupal\nodeapi\Controller\nodeapiController::gdrive'
+  requirements:
+    _access: 'TRUE'
+    

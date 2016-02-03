@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * @file
+ * Provides a list of languages from ISO 639 standard.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function languagefield_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+  $output = '';
+
+  switch ($route_name) {
+    case 'help.page.languagefield':
+      $output .= '<h3>' . t('Language field') . '</h3>';
+      $output .= '<p>' . t('The Languagefield module defines a Language field type.') . '</p>';
+  }
+  return $output;
+}
+
+/**
+ * Implements hook_field_widget_info_alter().
+ *
+ * In D7 this is used because no own widget was provided.
+ * In D8 we have our own widget with settings, so we do not need Options.
+ */
+/*
+function languagefield_field_widget_info_alter(array &$info) {
+  if (isset($info['options_buttons'])) {
+    $info['options_buttons']['field_types'][] = 'language_field';
+  }
+  if (isset($info['options_select'])) {
+    $info['options_select']['field_types'][] = 'language_field';
+  }
+  if (isset($info['multiselect'])) {
+    $info['multiselect']['field_types'][] = 'language_field';
+  }
+}
+*/

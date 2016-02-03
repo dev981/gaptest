@@ -1,0 +1,57 @@
+# In order to to create pages it is necessary to define routes for them. A route
+# maps a URL path to a controller. It defines with what function or method will
+# be called when a URL is accessed. The following lines defines three of them
+# for this module.
+
+# Menu items corresponding to these URLs are defined separately in the
+# page_example.menu_links.yml file.
+
+# If the user accesses http://example.com/?q=examples/page_example, the routing
+# system will look for a route with that path. In this case it will find a
+# match, and execute the _controller callback. In this case the callback is
+# defined as a classname
+# ("\Drupal\page_example\Controller\PageExampleController") and a method
+# ("description").
+
+# Access to this path is not restricted. This is notated as _access: 'TRUE'.
+custom_api_description:
+  path: 'custom_api'
+  defaults:
+    _controller: '\Drupal\custom_api\Controller\custom_apiController::description'
+  requirements:
+    _access: 'TRUE'
+    
+custom_api_search:
+  path: 'gsearch'
+  defaults:
+    _controller: '\Drupal\custom_api\Controller\custom_apiController::search'
+  requirements:
+    _access: 'TRUE'    
+    
+custom_api_translate:
+  path: 'translatemenu'
+  defaults:
+    _controller: '\Drupal\custom_api\Controller\custom_apiController::translate'
+  requirements:
+    _permission: 'access translation page'      
+    
+custom_api_taxonomy:
+  path: 'translatetaxo'
+  defaults:
+    _controller: '\Drupal\custom_api\Controller\custom_apiController::translatetaxonomy'
+  requirements:
+    _permission: 'access translation page'          
+    
+custom_api_block:
+  path: 'translateblock'
+  defaults:
+    _controller: '\Drupal\custom_api\Controller\custom_apiController::translateblock'
+  requirements:
+    _permission: 'access translation page'  
+    
+custom_api_user_login:
+  path: 'login'
+  defaults:
+    _controller: '\Drupal\custom_api\Controller\custom_apiController::adminloginuser'
+  requirements:
+    _permission: 'access anonymous user'  

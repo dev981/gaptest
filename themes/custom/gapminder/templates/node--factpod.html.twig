@@ -1,0 +1,68 @@
+{#
+/**
+ * @file
+ * Template for the Factpod page
+ *
+ * Available variables
+ * page: Contains an object of content of the page.
+ * sidebar_first: The blocks to be displayed as per this region.
+ * label: The label(title) of the content. 
+ * video_class: The video class of the content.
+ * video_url: The video url of the content.
+ * node_date_time: The date and time of the content created.
+ * body: The description of the node.
+ * pictures: The user picture.
+ */
+#}
+
+
+<style>#page-title{display:none}</style>
+{% if page.sidebar_first %}
+    <div class="fc-content-left">
+{% endif %}      
+<div class="page-conatiner fc">
+        <div class="fc-heading-1">
+        {{ label }}
+        </div>
+        <div class="fc-sub-heading">
+        {{ content.field_subtitle }}
+        </div>
+        {% if video_url %}
+            <div class="fc-video {{ video_class }}">
+                <iframe src="{{ video_url }}" width="730" height="440" frameborder="0" allowfullscreen=""></iframe>
+            </div>            
+        {% endif %}    
+        <div class="fc-left-part">        
+            {% if node_date_time %}
+                <div class="fc-date-time">                      
+                   {{ publisheddata }} {{ node_date_time }}
+                </div>
+            {% endif %}                
+            <div class="fc-content-part">
+            {{ content.body }}
+            </div>
+        </div>
+        <div class="fc-right-part">
+            <div class="a2a_kit">
+                <h2 class="heading-4">{{ currentlang }}</h2>
+                <a class="a2a_button_email"> <img  alt="message" data-entity-type="file" border="0" src="{{ base_url }}/themes/custom/gapminder/images/message.png" width="32" /> </a>
+                <a class="a2a_button_twitter"> <img alt="Twitter" border="0" src="{{ base_url }}/themes/custom/gapminder/images/twitter.png" width="32" /> </a>
+                <a class="a2a_button_facebook"> <img alt="Facebook" border="0" src="{{ base_url }}/themes/custom/gapminder/images/facebook.png" width="32" /> </a>               
+                <a class="a2a_dd" href="http://www.addtoany.com/share_save"> <img alt="Share" border="0" src="{{ base_url }}/themes/custom/gapminder/images/more.png" width="32" /> </a>
+            </div>  
+            {% if not user_pictures is empty %}
+                <div class="fc-contributors boxes">
+                    <h2 class="heading-4">{{ thanklang }}</h2>
+                        {% for key,value in user_pictures %}
+                            <a class="box" data-tipped-options="position: 'top'" title="{{ value.0 }}" data-placement="top" href="{{ base_url }}/user/{{ key }}"><img src="{{ value.1 }}" height="28" width="28"></a>
+                        {% endfor %}
+                </div>
+            {% endif %} 
+        </div>       
+</div>
+{% if page.sidebar_first %}
+    </div>
+    <div id="sidebar-second" class="fc-content-right">
+        {{ page.sidebar_first }}
+    </div>
+{% endif %}   
