@@ -209,14 +209,7 @@ class BlockContentForm extends ContentEntityForm {
         );
       }
       else {
-       /**
-           * To redirect on home page after save the translation block.
-           */
-          
-       // $form_state->setRedirectUrl($block->urlInfo('collection'));
-            $form_state->setRedirect(
-          '<front>'
-        );
+        $form_state->setRedirectUrl($block->urlInfo('collection'));
       }
     }
     else {
@@ -224,20 +217,6 @@ class BlockContentForm extends ContentEntityForm {
       // rebuilt and block form redisplayed.
       drupal_set_message($this->t('The block could not be saved.'), 'error');
       $form_state->setRebuild();
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    if ($this->entity->isNew()) {
-      $exists = $this->blockContentStorage->loadByProperties(array('info' => $form_state->getValue(['info', 0, 'value'])));
-      if (!empty($exists)) {
-        $form_state->setErrorByName('info', $this->t('A block with description %name already exists.', array(
-          '%name' => $form_state->getValue(array('info', 0, 'value')),
-        )));
-      }
     }
   }
 

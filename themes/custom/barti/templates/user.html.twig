@@ -1,0 +1,85 @@
+{#
+/**
+ * @file
+ * This file is used to customize the user profile page displayed at the frontend
+ *
+<!--Added an inline css-->
+
+ * Available variables:
+ * base_url: The site url.
+ * content: The field item's content.
+ * user_picture: The user's image.
+ * field_first_name: First name of the user.
+ * field_last_name: Last name of the user.
+ * field_profession: Profession of the user.
+ * field_location: Location of the user
+ * field_about: Description of the user
+ * field_links: Social media or any other link of the user
+ * facebook, linkedin, twitter, instagram: Social media links
+ */
+#}
+
+
+
+<style>#page-title{display:none}</style>
+
+<div class="profile-user">
+    
+    <!-- This code added to customize the user profile and displayed to the frontend-->
+    <div class="fc-user left">
+        {% if content.user_picture %}           
+        <div class="fc-user-picture">
+            {{ content.user_picture }}
+        </div>
+        {% endif %} 
+        
+        {% if content.field_contributions %}           
+        <div class="fc-user-contribution">
+            {{ contributions | raw }}
+        </div>
+        {% endif %} 
+    </div>
+     <!-- This code added the social media links and displayed to the frontend-->
+    <div class="fc-user right">
+        {% if content.field_first_name %}
+        <div class="fc-user-fullname">
+            {{ content.field_first_name }}
+            {{ content.field_last_name  }}
+        </div>
+        {% endif %} 
+        <div class="fc-user-social-icons">
+        {% if facebook %}             
+                <a class="facebook" href="{{ facebook }}" target="_blank"> <img alt="Facebook" border="0" src="{{ base_url }}/themes/custom/barti/images/facebook-logo-100x100.png" width="25" /> </a>
+        {% endif %}                  
+        {% if linkedin %}                 
+                <a class="linkedin" href="{{ linkedin }}" target="_blank"> <img alt="linkedin" border="0" src="{{ base_url }}/themes/custom/barti/images/linkedin-logo-100x88.png" width="25" /> </a>
+        {% endif %}                  
+        {% if twitter %}                 
+                <a class="twitter" href="{{ twitter }}" target="_blank"> <img alt="twitter" border="0" src="{{ base_url }}/themes/custom/barti/images/twitter-logo-100x81.png" width="25" /> </a>
+        {% endif %}                  
+        {% if instagram %}                 
+                <a class="instagram" href="{{ instagram }}" target="_blank"> <img alt="instagram" border="0" src="{{ base_url }}/themes/custom/barti/images/Instagram_Icon_Large.png" width="25" /> </a>          
+        {% endif %}                  
+        </div>     
+            
+        <!-- This code added the user information and displayed to the frontend-->
+        <div class="user-profession">
+            {{ content.field_profession }}
+        </div>
+        <div class="user-location">
+            {{ content.field_location }}
+        </div>
+        {% if content.field_about %}
+        <div class="user-about">
+            <h2 class="sir-trevor-title">{{ 'About me'|t }}</h2>    
+            {{ content.field_about }}
+        </div>
+        {% endif %}      
+        {% if content.field_links %}
+        <div class="user-links">
+            <h2 class="sir-trevor-title">{{ 'My Links'|t }}</h2>    
+            {{ content.field_links }}
+        </div>
+        {% endif %}     
+    </div>
+</div>

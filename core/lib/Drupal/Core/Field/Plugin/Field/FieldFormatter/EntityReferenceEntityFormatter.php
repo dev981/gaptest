@@ -52,8 +52,6 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase implem
    *   The view mode.
    * @param array $third_party_settings
    *   Any third party settings settings.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
    * @param LoggerChannelFactoryInterface $logger_factory
    *   The logger factory.
    */
@@ -119,11 +117,11 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase implem
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
     $view_mode = $this->getSetting('view_mode');
     $elements = array();
 
-    foreach ($this->getEntitiesToView($items) as $delta => $entity) {
+    foreach ($this->getEntitiesToView($items, $langcode) as $delta => $entity) {
       // Protect ourselves from recursive rendering.
       static $depth = 0;
       $depth++;

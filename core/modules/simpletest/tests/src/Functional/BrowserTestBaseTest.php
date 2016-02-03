@@ -13,9 +13,6 @@ use Drupal\simpletest\BrowserTestBase;
  * Tests BrowserTestBase functionality.
  *
  * @group simpletest
- *
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
  */
 class BrowserTestBaseTest extends BrowserTestBase {
 
@@ -34,7 +31,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
     $this->drupalLogin($account);
 
     // Visit a Drupal page that requires login.
-    $this->drupalGet('/test-page');
+    $this->drupalGet('test-page');
     $this->assertSession()->statusCodeEquals(200);
 
     // Test page contains some text.
@@ -46,7 +43,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
    */
   public function testForm() {
     // Ensure the proper response code for a _form route.
-    $this->drupalGet('/form-test/object-builder');
+    $this->drupalGet('form-test/object-builder');
     $this->assertSession()->statusCodeEquals(200);
 
     // Ensure the form and text field exist.

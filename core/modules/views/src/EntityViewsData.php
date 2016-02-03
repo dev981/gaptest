@@ -116,11 +116,29 @@ class EntityViewsData implements EntityHandlerInterface, EntityViewsDataInterfac
   public function getViewsData() {
     $data = [];
 
-    $base_table = $this->entityType->getBaseTable();
+    $base_table = $this->entityType->getBaseTable() ?: $this->entityType->id();
+    $revisionable = $this->entityType->isRevisionable();
     $base_field = $this->entityType->getKey('id');
-    $data_table = $this->entityType->getDataTable();
-    $revision_table = $this->entityType->getRevisionTable();
-    $revision_data_table = $this->entityType->getRevisionDataTable();
+
+    $revision_table = '';
+    if ($revisionable) {
+      $revision_table = $this->entityType->getRevisionTable() ?: $this->entityType->id() . '_revision';
+    }
+
+    $translatable = $this->entityType->isTranslatable();
+    $data_table = '';
+    if ($translatable) {
+      $data_table = $this->entityType->getDataTable() ?: $this->entityType->id() . '_field_data';
+    }
+
+    // Some entity types do not have a revision data table defined, but still
+    // have a revision table name set in
+    // \Drupal\Core\Entity\Sql\SqlContentEntityStorage::initTableLayout() so we
+    // apply the same kind of logic.
+    $revision_data_table = '';
+    if ($revisionable && $translatable) {
+      $revision_data_table = $this->entityType->getRevisionDataTable() ?: $this->entityType->id() . '_field_revision';
+    }
     $revision_field = $this->entityType->getKey('revision');
 
     // Setup base information of the views data.
@@ -152,13 +170,17 @@ class EntityViewsData implements EntityHandlerInterface, EntityViewsDataInterfac
       }
     }
 
-    $data[$base_table]['operations'] = array(
-      'field' => array(
-        'title' => $this->t('Operations links'),
-        'help' => $this->t('Provides links to perform entity operations.'),
-        'id' => 'entity_operations',
-      ),
-    );
+    // Entity types must implement a list_builder in order to use Views'
+    // entity operations field.
+    if ($this->entityType->hasListBuilderClass()) {
+      $data[$base_table]['operations'] = array(
+        'field' => array(
+          'title' => $this->t('Operations links'),
+          'help' => $this->t('Provides links to perform entity operations.'),
+          'id' => 'entity_operations',
+        ),
+      );
+    }
 
     // Setup relations to the revisions/property data.
     if ($data_table) {
@@ -203,18 +225,30 @@ class EntityViewsData implements EntityHandlerInterface, EntityViewsDataInterfac
       }
     }
 
+    $this->addEntityLinks($data[$base_table]);
+
     // Load all typed data definitions of all fields. This should cover each of
     // the entity base, revision, data tables.
     $field_definitions = $this->entityManager->getBaseFieldDefinitions($this->entityType->id());
     if ($table_mapping = $this->storage->getTableMapping()) {
+      // Fetch all fields that can appear in both the base table and the data
+      // table.
+      $entity_keys = $this->entityType->getKeys();
+      $duplicate_fields = array_intersect_key($entity_keys, array_flip(['id', 'revision', 'bundle']));
       // Iterate over each table we have so far and collect field data for each.
       // Based on whether the field is in the field_definitions provided by the
       // entity manager.
       // @todo We should better just rely on information coming from the entity
       //   storage.
-      // @todo https://drupal.org/node/2337511
+      // @todo https://www.drupal.org/node/2337511
       foreach ($table_mapping->getTableNames() as $table) {
         foreach ($table_mapping->getFieldNames($table) as $field_name) {
+          // To avoid confusing duplication in the user interface, for fields
+          // that are on both base and data tables, only add them on the data
+          // table (same for revision vs. revision data).
+          if ($data_table && ($table === $base_table || $table === $revision_table) && in_array($field_name, $duplicate_fields)) {
+            continue;
+          }
           $this->mapFieldDefinition($table, $field_name, $field_definitions[$field_name], $table_mapping, $data[$table]);
         }
       }
@@ -227,6 +261,44 @@ class EntityViewsData implements EntityHandlerInterface, EntityViewsDataInterfac
     });
 
     return $data;
+  }
+
+  /**
+   * Sets the entity links in case corresponding link templates exist.
+   *
+   * @param array $data
+   *   The views data of the base table.
+   */
+  protected function addEntityLinks(array &$data) {
+    $entity_type_id = $this->entityType->id();
+    $t_arguments = ['@entity_type_label' => $this->entityType->getLabel()];
+    if ($this->entityType->hasLinkTemplate('canonical')) {
+      $data['view_' . $entity_type_id] = [
+        'field' => [
+          'title' => $this->t('Link to @entity_type_label', $t_arguments),
+          'help' => $this->t('Provide a view link to the @entity_type_label.', $t_arguments),
+          'id' => 'entity_link',
+        ],
+      ];
+    }
+    if ($this->entityType->hasLinkTemplate('edit-form')) {
+      $data['edit_' . $entity_type_id] = [
+        'field' => [
+          'title' => $this->t('Link to edit @entity_type_label', $t_arguments),
+          'help' => $this->t('Provide an edit link to the @entity_type_label.', $t_arguments),
+          'id' => 'entity_link_edit',
+        ],
+      ];
+    }
+    if ($this->entityType->hasLinkTemplate('delete-form')) {
+      $data['delete_' . $entity_type_id] = [
+        'field' => [
+          'title' => $this->t('Link to delete @entity_type_label', $t_arguments),
+          'help' => $this->t('Provide a delete link to the @entity_type_label.', $t_arguments),
+          'id' => 'entity_link_delete',
+        ],
+      ];
+    }
   }
 
   /**
@@ -313,7 +385,7 @@ class EntityViewsData implements EntityHandlerInterface, EntityViewsDataInterfac
       case 'timestamp':
       case 'created':
       case 'changed':
-        $views_field['field']['id'] = 'date';
+        $views_field['field']['id'] = 'field';
         $views_field['argument']['id'] = 'date';
         $views_field['filter']['id'] = 'date';
         $views_field['sort']['id'] = 'date';
@@ -371,6 +443,7 @@ class EntityViewsData implements EntityHandlerInterface, EntityViewsDataInterfac
           case 'char':
           case 'string':
           case 'varchar':
+          case 'varchar_ascii':
           case 'tinytext':
           case 'text':
           case 'mediumtext':
@@ -509,15 +582,9 @@ class EntityViewsData implements EntityHandlerInterface, EntityViewsDataInterfac
   }
 
   /**
-   * Gets the table of an entity type to be used as base table in views.
-   *
-   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
-   *   The entity type.
-   *
-   * @return string
-   *   The name of the base table in views.
+   * {@inheritdoc}
    */
-  protected function getViewsTableForEntityType(EntityTypeInterface $entity_type) {
+  public function getViewsTableForEntityType(EntityTypeInterface $entity_type) {
     return $entity_type->getDataTable() ?: $entity_type->getBaseTable();
   }
 

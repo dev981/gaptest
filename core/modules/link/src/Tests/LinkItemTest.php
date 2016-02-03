@@ -10,7 +10,10 @@ namespace Drupal\link\Tests;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FieldItemInterface;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\field\Tests\FieldUnitTestBase;
+use Drupal\link\LinkItemInterface;
 
 /**
  * Tests the new entity API for the link field type.
@@ -29,17 +32,40 @@ class LinkItemTest extends FieldUnitTestBase {
   protected function setUp() {
     parent::setUp();
 
-    // Create a link field for validation.
-    entity_create('field_storage_config', array(
+    // Create a generic, external, and internal link fields for validation.
+    FieldStorageConfig::create([
       'field_name' => 'field_test',
       'entity_type' => 'entity_test',
       'type' => 'link',
-    ))->save();
-    entity_create('field_config', array(
+    ])->save();
+    FieldConfig::create([
       'entity_type' => 'entity_test',
       'field_name' => 'field_test',
       'bundle' => 'entity_test',
-    ))->save();
+      'settings' => ['link_type' => LinkItemInterface::LINK_GENERIC],
+    ])->save();
+    FieldStorageConfig::create([
+      'field_name' => 'field_test_external',
+      'entity_type' => 'entity_test',
+      'type' => 'link',
+    ])->save();
+    FieldConfig::create([
+      'entity_type' => 'entity_test',
+      'field_name' => 'field_test_external',
+      'bundle' => 'entity_test',
+      'settings' => ['link_type' => LinkItemInterface::LINK_EXTERNAL],
+    ])->save();
+    FieldStorageConfig::create([
+      'field_name' => 'field_test_internal',
+      'entity_type' => 'entity_test',
+      'type' => 'link',
+    ])->save();
+    FieldConfig::create([
+      'entity_type' => 'entity_test',
+      'field_name' => 'field_test_internal',
+      'bundle' => 'entity_test',
+      'settings' => ['link_type' => LinkItemInterface::LINK_INTERNAL],
+    ])->save();
   }
 
   /**
@@ -48,7 +74,7 @@ class LinkItemTest extends FieldUnitTestBase {
   public function testLinkItem() {
     // Create entity.
     $entity = entity_create('entity_test');
-    $url = 'http://www.drupal.org?test_param=test_value';
+    $url = 'https://www.drupal.org?test_param=test_value';
     $parsed_url = UrlHelper::parse($url);
     $title = $this->randomMachineName();
     $class = $this->randomMachineName();
@@ -82,7 +108,7 @@ class LinkItemTest extends FieldUnitTestBase {
     $this->assertEqual($entity->field_test->options['query'], $parsed_url['query']);
 
     // Verify changing the field value.
-    $new_url = 'http://drupal.org';
+    $new_url = 'https://www.drupal.org';
     $new_title = $this->randomMachineName();
     $new_class = $this->randomMachineName();
     $entity->field_test->uri = $new_url;
@@ -101,9 +127,41 @@ class LinkItemTest extends FieldUnitTestBase {
     $this->assertEqual($entity->field_test->title, $new_title);
     $this->assertEqual($entity->field_test->options['attributes']['class'], $new_class);
 
-    // Test the generateSampleValue() method.
+    // Check that if we only set uri the default values for title and options
+    // are also initialized.
+    $entity->field_test = ['uri' => 'internal:/node/add'];
+    $this->assertEqual($entity->field_test->uri, 'internal:/node/add');
+    $this->assertNull($entity->field_test->title);
+    $this->assertIdentical($entity->field_test->options, []);
+
+    // Check that if set uri and serialize options then the default values are
+    // properly initialized.
+    $entity->field_test = [
+      'uri' => 'internal:/node/add',
+      'options' => serialize(['query' => NULL]),
+    ];
+    $this->assertEqual($entity->field_test->uri, 'internal:/node/add');
+    $this->assertNull($entity->field_test->title);
+    $this->assertNull($entity->field_test->options['query']);
+
+    // Check that if we set the direct value of link field it correctly set the
+    // uri and the default values of the field.
+    $entity->field_test = 'internal:/node/add';
+    $this->assertEqual($entity->field_test->uri, 'internal:/node/add');
+    $this->assertNull($entity->field_test->title);
+    $this->assertIdentical($entity->field_test->options, []);
+
+    // Check that setting LinkItem value NULL doesn't generate any error or
+    // warning.
+    $entity->field_test[0] = NULL;
+    $this->assertNull($entity->field_test[0]->getValue());
+
+    // Test the generateSampleValue() method for generic, external, and internal
+    // link types.
     $entity = entity_create('entity_test');
     $entity->field_test->generateSampleItems();
+    $entity->field_test_external->generateSampleItems();
+    $entity->field_test_internal->generateSampleItems();
     $this->entityValidateAndSave($entity);
   }
 

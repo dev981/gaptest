@@ -51,15 +51,15 @@ interface MenuLinkContentInterface extends ContentEntityInterface, EntityChanged
    *   The description to use on admin pages or as a title attribute.
    */
   public function getDescription();
-
-  /**
+  
+    /**
    * Gets the menu plugin ID associated with this entity.
    *
    * @return string
    *   The plugin ID.
    */
   public function getIcon();
-  
+
   /**
    * Gets the menu plugin ID associated with this entity.
    *

@@ -10,7 +10,6 @@ namespace Drupal\Core\Field\Plugin\Field\FieldWidget;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Component\Utility\Unicode;
 
 /**
  * Plugin implementation of the 'string_textarea' widget.
@@ -61,7 +60,7 @@ class StringTextareaWidget extends WidgetBase {
   public function settingsSummary() {
     $summary = array();
 
-    $summary[] = t('Number of rows: !rows', array('!rows' => $this->getSetting('rows')));
+    $summary[] = t('Number of rows: @rows', array('@rows' => $this->getSetting('rows')));
     $placeholder = $this->getSetting('placeholder');
     if (!empty($placeholder)) {
       $summary[] = t('Placeholder: @placeholder', array('@placeholder' => $placeholder));
@@ -74,44 +73,12 @@ class StringTextareaWidget extends WidgetBase {
    * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-    $OriginalValue='';
-    if (($node = \Drupal::routeMatch()->getParameter('node')) && $node instanceof \Drupal\node\NodeInterface)
-    {
-        $FiledsView=$items->view();
-        $LangCode=$items->getLangcode();   
-        $FieldName=$FiledsView['#field_name'];
-        $node=(array)$node;
-        $arrayValues=array_values($node);
-        if(isset($arrayValues[0]['langcode']['x-default']) && ($arrayValues[0]['langcode']['x-default']!=$LangCode))
-        {
-              if($FieldName!='title')
-              {
-                if(isset($arrayValues[0][$FieldName]['x-default'][0]['value']))
-                {
-                    $OriginalValue =$arrayValues[0][$FieldName]['x-default'][0]['value'];
-                }
-              }
-              else
-              {
-                  if(isset($arrayValues[0][$FieldName]['x-default']))
-                  {
-                    $OriginalValue =$arrayValues[0][$FieldName]['x-default'];
-                  }
-                  
-              }  
-             $Value ="<div class='original_text'><span class='hoveron_original'>".$OriginalValue."</span>";         
-             $OriginalValue = Unicode::truncate($OriginalValue,200, TRUE );                 
-             $Value .='<span class="original">ORIGINAL: </span>'.$OriginalValue.'</div>';
-        }
-    }        
-      
     $element['value'] = $element + array(
       '#type' => 'textarea',
       '#default_value' => $items[$delta]->value,
       '#rows' => $this->getSetting('rows'),
       '#placeholder' => $this->getSetting('placeholder'),
-      '#attributes' => array('class' => array('text-full')),
-      '#suffix'=>$Value        
+      '#attributes' => array('class' => array('js-text-full', 'text-full')),
     );
 
     return $element;

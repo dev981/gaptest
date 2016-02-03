@@ -8,7 +8,6 @@
 namespace Drupal\user\Tests\Views;
 
 use Drupal\user\Entity\Role;
-use Drupal\user\Tests\Views\UserUnitTestBase;
 use Drupal\views\Entity\View;
 use Drupal\views\Views;
 
@@ -19,7 +18,7 @@ use Drupal\views\Views;
  *
  * @see \Drupal\user\Plugin\views\filter\Roles
  */
-class HandlerFilterRolesTest extends UserUnitTestBase {
+class HandlerFilterRolesTest extends UserKernelTestBase {
 
   /**
    * Views used by this test.
@@ -53,6 +52,11 @@ class HandlerFilterRolesTest extends UserUnitTestBase {
     $view->save();
     $expected['config'][] = 'user.role.test_user_role';
     $this->assertEqual($expected, $view->getDependencies());
+
+    $view = Views::getView('test_user_name');
+    $view->initDisplay();
+    $view->initHandlers();
+    $this->assertEqual(array_keys($view->filter['roles_target_id']->getValueOptions()), ['test_user_role']);
 
     $view = View::load('test_user_name');
     $display = &$view->getDisplay('default');

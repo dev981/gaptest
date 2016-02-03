@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\Tests\Core\Routing\RoutingTest.
+ * Contains \Drupal\Tests\Core\Routing\AccessAwareRouterTest.
  */
 
 namespace Drupal\Tests\Core\Routing;
@@ -49,7 +49,7 @@ class AccessAwareRouterTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
     $this->route = new Route('test');
     $this->accessManager = $this->getMock('Drupal\Core\Access\AccessManagerInterface');

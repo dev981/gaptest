@@ -98,7 +98,7 @@ class SessionManager extends NativeSessionStorage implements SessionManagerInter
     // @todo When not using the Symfony Session object, the list of bags in the
     //   NativeSessionStorage will remain uninitialized. This will lead to
     //   errors in NativeSessionHandler::loadSession. Remove this after
-    //   https://drupal.org/node/2229145, when we will be using the Symfony
+    //   https://www.drupal.org/node/2229145, when we will be using the Symfony
     //   session object (which registers an attribute bag with the
     //   manager upon instantiation).
     $this->bags = array();
@@ -152,7 +152,7 @@ class SessionManager extends NativeSessionStorage implements SessionManagerInter
   /**
    * Forcibly start a PHP session.
    *
-   * @return boolean
+   * @return bool
    *   TRUE if the session is started.
    */
   protected function startNow() {
@@ -331,8 +331,7 @@ class SessionManager extends NativeSessionStorage implements SessionManagerInter
    * Migrates the current session to a new session id.
    *
    * @param string $old_session_id
-   *   The old session id. The new session id is $this->getId() unless
-   *   $new_insecure_session_id is not empty.
+   *   The old session ID. The new session ID is $this->getId().
    */
   protected function migrateStoredSession($old_session_id) {
     $fields = array('sid' => Crypt::hashBase64($this->getId()));

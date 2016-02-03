@@ -25,6 +25,13 @@ class DefaultViewsTest extends UITestBase {
    */
   public static $testViews = array('test_view_status', 'test_page_display_menu', 'test_page_display_arguments');
 
+
+  protected function setUp() {
+    parent::setUp();
+
+    $this->drupalPlaceBlock('page_title_block');
+  }
+
   /**
    * Tests default views.
    */
@@ -135,6 +142,23 @@ class DefaultViewsTest extends UITestBase {
     $this->drupalGet($edit_href);
     $this->assertResponse(404);
     $this->assertText('Page not found');
+
+    // Delete all duplicated Glossary views.
+    $this->drupalGet('admin/structure/views');
+    $this->clickViewsOperationLink(t('Delete'), 'duplicate_of_glossary');
+    // Submit the confirmation form.
+    $this->drupalPostForm(NULL, array(), t('Delete'));
+
+    $this->drupalGet('glossary');
+    $this->assertResponse(200);
+
+    $this->drupalGet('admin/structure/views');
+    $this->clickViewsOperationLink(t('Delete'), $random_name);
+    // Submit the confirmation form.
+    $this->drupalPostForm(NULL, array(), t('Delete'));
+    $this->drupalGet('glossary');
+    $this->assertResponse(404);
+    $this->assertText('Page not found');
   }
 
   /**
@@ -200,7 +224,7 @@ class DefaultViewsTest extends UITestBase {
    * @param $unique_href_part
    *   A unique string that is expected to occur within the href of the desired
    *   link. For example, if the link URL is expected to look like
-   *   "admin/structure/views/view/glossary/...", then "/glossary/" could be
+   *   "admin/structure/views/view/glossary/*", then "/glossary/" could be
    *   passed as the expected unique string.
    *
    * @return

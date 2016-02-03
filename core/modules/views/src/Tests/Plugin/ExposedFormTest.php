@@ -8,7 +8,8 @@
 namespace Drupal\views\Tests\Plugin;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Url;
+use Drupal\entity_test\Entity\EntityTest;
+use Drupal\system\Tests\Cache\AssertPageCacheContextsAndTagsTrait;
 use Drupal\views\Tests\ViewTestBase;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Views;
@@ -20,19 +21,21 @@ use Drupal\views\Views;
  */
 class ExposedFormTest extends ViewTestBase {
 
+  use AssertPageCacheContextsAndTagsTrait;
+
   /**
    * Views used by this test.
    *
    * @var array
    */
-  public static $testViews = array('test_exposed_form_buttons', 'test_exposed_block');
+  public static $testViews = array('test_exposed_form_buttons', 'test_exposed_block', 'test_exposed_form_sort_items_per_page');
 
   /**
    * Modules to enable.
    *
    * @var array
    */
-  public static $modules = array('node', 'views_ui', 'block');
+  public static $modules = array('node', 'views_ui', 'block', 'entity_test');
 
   protected function setUp() {
     parent::setUp();
@@ -132,7 +135,7 @@ class ExposedFormTest extends ViewTestBase {
     $this->executeView($view);
     $exposed_form = $view->display_handler->getPlugin('exposed_form');
     $output = $exposed_form->renderExposedForm();
-    $this->setRawContent(drupal_render($output));
+    $this->setRawContent(\Drupal::service('renderer')->renderRoot($output));
 
     $this->assertFieldByXpath('//form/@id', $this->getExpectedExposedFormId($view), 'Expected form ID found.');
 
@@ -148,6 +151,7 @@ class ExposedFormTest extends ViewTestBase {
    * Tests the exposed block functionality.
    */
   public function testExposedBlock() {
+    $this->drupalCreateContentType(['type' => 'page']);
     $view = Views::getView('test_exposed_block');
     $view->setDisplay('page_1');
     $block = $this->drupalPlaceBlock('views_exposed_filter_block:test_exposed_block-page_1');
@@ -164,6 +168,15 @@ class ExposedFormTest extends ViewTestBase {
     // Test there is only one views exposed form on the page.
     $elements = $this->xpath('//form[@id=:id]', array(':id' => $this->getExpectedExposedFormId($view)));
     $this->assertEqual(count($elements), 1, 'One exposed form block found.');
+
+    // Test that the correct option is selected after form submission.
+    $this->assertCacheContext('url');
+    $this->assertOptionSelected('edit-type', 'All');
+    foreach (['All', 'article', 'page'] as $argument) {
+      $this->drupalGet('test_exposed_block', ['query' => ['type' => $argument]]);
+      $this->assertCacheContext('url');
+      $this->assertOptionSelected('edit-type', $argument);
+    }
   }
 
   /**
@@ -188,6 +201,84 @@ class ExposedFormTest extends ViewTestBase {
     // Ensure that results are displayed.
     $rows = $this->xpath("//div[contains(@class, 'views-row')]");
     $this->assertEqual(count($rows), 5, 'All rows are displayed by default when input is provided.');
+  }
+
+  /**
+   * Test the "on demand text" for the input required exposed form type.
+   */
+  public function testTextInputRequired() {
+    $view = Views::getView('test_exposed_form_buttons');
+    $display = &$view->storage->getDisplay('default');
+    $display['display_options']['exposed_form']['type'] = 'input_required';
+    // Set up the "on demand text".
+    // @see https://www.drupal.org/node/535868
+    $on_demand_text = 'Select any filter and click Apply to see results.';
+    $display['display_options']['exposed_form']['options']['text_input_required'] = $on_demand_text;
+    $display['display_options']['exposed_form']['options']['text_input_required_format'] = filter_default_format();
+    $view->save();
+
+    // Ensure that the "on demand text" is displayed when no exposed filters are
+    // applied.
+    $this->drupalGet('test_exposed_form_buttons');
+    $this->assertText('Select any filter and click Apply to see results.');
+
+    // Ensure that the "on demand text" is not displayed when an exposed filter
+    // is applied.
+    $this->drupalGet('test_exposed_form_buttons', array('query' => array('type' => 'article')));
+    $this->assertNoText($on_demand_text);
+  }
+
+  /**
+   * Tests exposed forms with exposed sort and items per page.
+   */
+  public function testExposedSortAndItemsPerPage() {
+    for ($i = 0; $i < 50; $i++) {
+      $entity = EntityTest::create([
+      ]);
+      $entity->save();
+    }
+    $contexts = [
+      'languages:language_interface',
+      'entity_test_view_grants',
+      'theme',
+      'url.query_args',
+      'languages:language_content'
+    ];
+
+    $this->drupalGet('test_exposed_form_sort_items_per_page');
+    $this->assertCacheContexts($contexts);
+    $this->assertIds(range(1, 10, 1));
+
+    $this->drupalGet('test_exposed_form_sort_items_per_page', ['query' => ['sort_order' => 'DESC']]);
+    $this->assertCacheContexts($contexts);
+    $this->assertIds(range(50, 41, 1));
+
+    $this->drupalGet('test_exposed_form_sort_items_per_page', ['query' => ['sort_order' => 'DESC', 'items_per_page' => 25]]);
+    $this->assertCacheContexts($contexts);
+    $this->assertIds(range(50, 26, 1));
+
+    $this->drupalGet('test_exposed_form_sort_items_per_page', ['query' => ['sort_order' => 'DESC', 'items_per_page' => 25, 'offset' => 10]]);
+    $this->assertCacheContexts($contexts);
+    $this->assertIds(range(40, 16, 1));
+  }
+
+  /**
+   * Checks whether the specified ids are the ones displayed in the view output.
+   *
+   * @param int[] $ids
+   *   The ids to check.
+   *
+   * @return bool
+   *   TRUE if ids match, FALSE otherwise.
+   */
+  protected function assertIds(array $ids) {
+    $elements = $this->cssSelect('div.view-test-exposed-form-sort-items-per-page div.views-row span.field-content');
+    $actual_ids = [];
+    foreach ($elements as $element) {
+      $actual_ids[] = (int) $element;
+    }
+
+    return $this->assertIdentical($ids, $actual_ids);
   }
 
   /**

@@ -2,14 +2,12 @@
 
 /**
  * @file
- * Contains Drupal\system\Tests\Database\ConnectionUnitTest.
+ * Contains \Drupal\system\Tests\Database\ConnectionUnitTest.
  */
 
 namespace Drupal\system\Tests\Database;
 
-use Doctrine\Common\Reflection\StaticReflectionProperty;
 use Drupal\Core\Database\Database;
-use Drupal\Core\Site\Settings;
 use Drupal\simpletest\KernelTestBase;
 
 /**
@@ -35,7 +33,7 @@ class ConnectionUnitTest extends KernelTestBase {
     // Determine whether the database driver is MySQL. If it is not, the test
     // methods will not be executed.
     // @todo Make this test driver-agnostic, or find a proper way to skip it.
-    // @see http://drupal.org/node/1273478
+    //   See https://www.drupal.org/node/1273478.
     $connection_info = Database::getConnectionInfo('default');
     $this->skipTest = (bool) ($connection_info['default']['driver'] != 'mysql');
     if ($this->skipTest) {
@@ -68,7 +66,7 @@ class ConnectionUnitTest extends KernelTestBase {
   /**
    * Returns the connection ID of the current test connection.
    *
-   * @return integer
+   * @return int
    */
   protected function getConnectionID() {
     return (int) Database::getConnection($this->target, $this->key)->query('SELECT CONNECTION_ID()')->fetchField();
@@ -77,7 +75,7 @@ class ConnectionUnitTest extends KernelTestBase {
   /**
    * Asserts that a connection ID exists.
    *
-   * @param integer $id
+   * @param int $id
    *   The connection ID to verify.
    */
   protected function assertConnection($id) {
@@ -88,7 +86,7 @@ class ConnectionUnitTest extends KernelTestBase {
   /**
    * Asserts that a connection ID does not exist.
    *
-   * @param integer $id
+   * @param int $id
    *   The connection ID to verify.
    */
   protected function assertNoConnection($id) {

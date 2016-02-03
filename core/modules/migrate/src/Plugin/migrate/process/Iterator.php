@@ -14,7 +14,7 @@ use Drupal\migrate\Row;
 /**
  * This plugin iterates and processes an array.
  *
- * @see https://drupal.org/node/2135345
+ * @see https://www.drupal.org/node/2135345
  *
  * @MigrateProcessPlugin(
  *   id = "iterator",
@@ -65,4 +65,5 @@ class Iterator extends ProcessPluginBase {
   public function multiple() {
     return TRUE;
   }
+
 }

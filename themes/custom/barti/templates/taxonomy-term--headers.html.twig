@@ -1,0 +1,44 @@
+{#
+/**
+ * @file
+ * Gapminder theme override for taxonomy term fields.
+ *
+ * Available variables:
+ * - attributes: HTML attributes for the containing element.
+ * - label_hidden: Whether to show the field label or not.
+ * - title_attributes: HTML attributes for the label.
+ * - label: The label for the field.
+ * - content_attributes: HTML attributes for the content.
+ * - items: List of all the field items. Each item contains:
+ *   - attributes: List of HTML attributes for each item.
+ *   - content: The field item's content.
+ * - entity_type: The entity type to which the field belongs.
+ * - field_name: The name of the field.
+ * - field_type: The type of the field.
+ * - label_display: The display settings for the label.
+ *
+ * @see template_preprocess_field()
+ * @see bartik_preprocess_field()
+ */
+#}
+<style>#page-title{display:none}</style>
+<div class="page-conatiner taxo">
+ 
+<!-- The title, taxonomy image, name and description of the taxonomy -->    
+    
+{{ title_prefix }}
+    <div class="image-title-container">
+        {% if content.field_term_image %}
+            <div class="top-image">
+                {{ content.field_term_image }}
+            </div>
+        {% endif %} 
+        <div class="heading-1">
+        {{ name }}
+        </div>
+    </div>
+         {{ title_suffix }}
+<div class="content-part">
+{{ content.description }}
+</div>
+</div>

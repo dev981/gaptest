@@ -8,6 +8,7 @@
 namespace Drupal\menu_link_content\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -52,6 +53,8 @@ use Drupal\menu_link_content\MenuLinkContentInterface;
  */
 class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterface {
 
+  use EntityChangedTrait;
+
   /**
    * A flag for whether this entity is wrapped in a plugin instance.
    *
@@ -94,11 +97,9 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
     return $this->get('description')->value;
   }
 
-  
-  public function getIcon() {
+    public function getIcon() {
     return $this->get('icon')->value;
   }  
-  
   /**
    * {@inheritdoc}
    */
@@ -132,13 +133,6 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
    */
   public function getWeight() {
     return (int) $this->get('weight')->value;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getChangedTime() {
-    return $this->get('changed')->value;
   }
 
   /**
@@ -210,15 +204,22 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
 
     // The menu link can just be updated if there is already an menu link entry
     // on both entity and menu link plugin level.
-    if ($update && $menu_link_manager->getDefinition($this->getPluginId())) {
+    $definition = $this->getPluginDefinition();
+    // Even when $update is FALSE, for top level links it is possible the link
+    // already is in the storage because of the getPluginDefinition() call
+    // above, see https://www.drupal.org/node/2605684#comment-10515450 for the
+    // call chain. Because of this the $update flag is ignored and only the
+    // existence of the definition (equals to being in the tree storage) is
+    // checked.
+    if ($menu_link_manager->getDefinition($this->getPluginId(), FALSE)) {
       // When the entity is saved via a plugin instance, we should not call
       // the menu tree manager to update the definition a second time.
       if (!$this->insidePlugin) {
-        $menu_link_manager->updateDefinition($this->getPluginId(), $this->getPluginDefinition(), FALSE);
+        $menu_link_manager->updateDefinition($this->getPluginId(), $definition, FALSE);
       }
     }
     else {
-      $menu_link_manager->addDefinition($this->getPluginId(), $this->getPluginDefinition());
+      $menu_link_manager->addDefinition($this->getPluginId(), $definition);
     }
   }
 
@@ -256,6 +257,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
       ->setLabel(t('Bundle'))
       ->setDescription(t('The content menu link bundle.'))
       ->setSetting('max_length', EntityTypeInterface::BUNDLE_MAX_LENGTH)
+      ->setSetting('is_ascii', TRUE)
       ->setReadOnly(TRUE);
 
     $fields['title'] = BaseFieldDefinition::create('string')
@@ -263,9 +265,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
       ->setDescription(t('The text to be used for this link in the menu.'))
       ->setRequired(TRUE)
       ->setTranslatable(TRUE)
-      ->setSettings(array(
-        'max_length' => 255,
-      ))
+      ->setSetting('max_length', 255)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'string',
@@ -281,9 +281,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
       ->setLabel(t('Description'))
       ->setDescription(t('Shown when hovering over the menu link.'))
       ->setTranslatable(TRUE)
-      ->setSettings(array(
-        'max_length' => 255,
-      ))
+      ->setSetting('max_length', 255)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'string',
@@ -293,8 +291,8 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
         'type' => 'string_textfield',
         'weight' => 0,
       ));
-
-    $fields['icon'] = BaseFieldDefinition::create('string')
+    
+        $fields['icon'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Icon'))
       ->setDescription(t('Icon to show on left of menu'))
       ->setTranslatable(TRUE)
@@ -309,12 +307,13 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
       ->setDisplayOptions('form', array(
         'type' => 'string_textfield',
         'weight' => 10,
-      ));    
-    
+      ));
+
     $fields['menu_name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Menu name'))
       ->setDescription(t('The menu name. All links with the same menu name (such as "tools") are part of the same menu.'))
-      ->setDefaultValue('tools');
+      ->setDefaultValue('tools')
+      ->setSetting('is_ascii', TRUE);
 
     $fields['link'] = BaseFieldDefinition::create('link')
       ->setLabel(t('Link'))
@@ -398,7 +397,8 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
-      ->setDescription(t('The time that the menu link was last edited.'));
+      ->setDescription(t('The time that the menu link was last edited.'))
+      ->setTranslatable(TRUE);
 
     return $fields;
   }
